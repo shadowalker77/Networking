@@ -76,11 +76,15 @@ class AyanApi private constructor(
                             val rawResponse = response.body()?.string()
                             Log.d("AyanRawLog", rawResponse)
                             val jsonObject = JsonParser().parse(rawResponse).asJsonObject
-                            val parameters =
-                                Gson().fromJson<GenericOutput>(
+                            var parameters: GenericOutput? = null
+                            try {
+                                parameters = Gson().fromJson<GenericOutput>(
                                     jsonObject.getAsJsonObject("Parameters"),
                                     GenericOutput::class.java
                                 )
+                            } catch (e: Exception) {
+                                Log.d("AyanLog", "Parameters is null.")
+                            }
                             val status =
                                 Gson().fromJson<Status>(jsonObject.getAsJsonObject("Status"), Status::class.java)
                             wrappedPackage.response = AyanResponse(parameters, status)
