@@ -44,7 +44,7 @@ class AyanApi private constructor(
         input: Any? = null,
         hasIdentity: Boolean = true,
         baseUrl: String = defaultBaseUrl
-    ) {
+    ): WrappedPackage<*, GenericOutput> {
         var identity: Identity? = null
         if (hasIdentity && getUserToken != null) identity = Identity(getUserToken.invoke())
         val request = AyanRequest(identity, input)
@@ -170,6 +170,7 @@ class AyanApi private constructor(
                     ayanCallingStatus.dispatchFail(failure)
                 }
             })
+        return wrappedPackage
     }
 }
 
