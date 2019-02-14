@@ -18,7 +18,8 @@ typealias GetUserToken = () -> String
 
 class AyanApi private constructor(
     val getUserToken: GetUserToken? = null,
-    val defaultBaseUrl: String = ""
+    val defaultBaseUrl: String = "",
+    val timeout: Long = 30
 ) {
 
     val wrappedPackages = ArrayList<WrappedPackage<*, *>>()
@@ -27,15 +28,15 @@ class AyanApi private constructor(
 
         private var apiInterface: ApiInterface? = null
 
-        fun getApiInterfaceInstance(defaultBaseUrl: String) =
+        fun getApiInterfaceInstance(defaultBaseUrl: String, timeout: Long) =
             (apiInterface ?: RetrofitClient.getInstance(defaultBaseUrl).create(ApiInterface::class.java).also {
                 apiInterface = it
             })!!
 
         private var ayanApi: AyanApi? = null
 
-        fun getAyanApiInstance(getUserToken: GetUserToken? = null, defaultBaseUrl: String) =
-            ayanApi ?: AyanApi(getUserToken, defaultBaseUrl).also { ayanApi = it }
+        fun getAyanApiInstance(getUserToken: GetUserToken? = null, defaultBaseUrl: String, timeout: Long = 30) =
+            ayanApi ?: AyanApi(getUserToken, defaultBaseUrl, timeout).also { ayanApi = it }
     }
 
     inline fun <reified GenericOutput> ayanCall(
@@ -55,12 +56,15 @@ class AyanApi private constructor(
         )
 
         ayanCallingStatus.dispatchLoad()
-        getApiInterfaceInstance(defaultBaseUrl).callApi(baseUrl + endPoint, request)
+        getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                     wrappedPackage.reCallApi = {
                         ayanCallingStatus.dispatchLoad()
-                        getApiInterfaceInstance(defaultBaseUrl).callApi(wrappedPackage.url, wrappedPackage.request)
+                        getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(
+                            wrappedPackage.url,
+                            wrappedPackage.request
+                        )
                             .enqueue(this)
                     }
                     if (response.isSuccessful) {
@@ -128,7 +132,10 @@ class AyanApi private constructor(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallingStatus.dispatchLoad()
-                        getApiInterfaceInstance(defaultBaseUrl).callApi(wrappedPackage.url, wrappedPackage.request)
+                        getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(
+                            wrappedPackage.url,
+                            wrappedPackage.request
+                        )
                             .enqueue(this)
                     }
                     val failure = when (t) {
