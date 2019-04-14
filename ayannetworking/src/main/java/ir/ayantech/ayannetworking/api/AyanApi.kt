@@ -56,6 +56,10 @@ class AyanApi private constructor(
         )
 
         ayanCallingStatus.dispatchLoad()
+        try {
+            Log.d("AyanReq,$endPoint", Gson().toJson(request))
+        } catch (e: Exception) {
+        }
         getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
