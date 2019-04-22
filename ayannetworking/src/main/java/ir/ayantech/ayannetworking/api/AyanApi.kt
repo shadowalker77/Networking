@@ -92,7 +92,14 @@ class AyanApi private constructor(
                                     GenericOutput::class.java
                                 )
                             } catch (e: Exception) {
-                                Log.d("AyanLog", "Parameters is null.")
+                                try {
+                                    parameters = Gson().fromJson<GenericOutput>(
+                                        jsonObject.getAsJsonArray("Parameters"),
+                                        GenericOutput::class.java
+                                    )
+                                } catch (e: Exception) {
+                                    Log.d("AyanLog", "Parameters is null.")
+                                }
                             }
                             val status =
                                 Gson().fromJson<Status>(jsonObject.getAsJsonObject("Status"), Status::class.java)
