@@ -43,13 +43,14 @@ class AyanApi private constructor(
         ayanCallingStatus: AyanCallingStatus<GenericOutput>,
         endPoint: String,
         input: Any? = null,
+        identity: Any? = null,
         hasIdentity: Boolean = true,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
-        var identity: Identity? = null
-        if (hasIdentity && getUserToken != null) identity = Identity(getUserToken.invoke())
-        val request = AyanRequest(identity, input)
-
+        var finalIdentity: Any? = null
+        if (hasIdentity && getUserToken != null) finalIdentity = Identity(getUserToken.invoke())
+        if (identity != null) finalIdentity = identity
+        val request = AyanRequest(finalIdentity, input)
         val wrappedPackage = WrappedPackage<Any, GenericOutput>(
             baseUrl + endPoint,
             request
