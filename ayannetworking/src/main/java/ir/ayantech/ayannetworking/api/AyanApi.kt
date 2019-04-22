@@ -96,7 +96,7 @@ class AyanApi private constructor(
                                 )
                             } catch (e: Exception) {
                                 try {
-                                    parameters = Gson().fromJson(jsonObject.getAsJsonArray("Parameters"), object : TypeToken<List<GenericOutput>>() {
+                                    parameters = Gson().fromJson(jsonObject.getAsJsonArray("Parameters"), object : TypeToken<GenericOutput>() {
                                     }.type)
                                 } catch (e: Exception) {
                                     Log.d("AyanLog", "Parameters is null.")
