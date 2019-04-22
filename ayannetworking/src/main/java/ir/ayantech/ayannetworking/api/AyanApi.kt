@@ -12,6 +12,9 @@ import retrofit2.Response
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
+import com.google.gson.reflect.TypeToken
+
+
 
 typealias ReCallApi = () -> Unit
 typealias GetUserToken = () -> String
@@ -93,10 +96,8 @@ class AyanApi private constructor(
                                 )
                             } catch (e: Exception) {
                                 try {
-                                    parameters = Gson().fromJson<GenericOutput>(
-                                        jsonObject.getAsJsonArray("Parameters"),
-                                        GenericOutput::class.java
-                                    )
+                                    parameters = Gson().fromJson(jsonObject.getAsJsonArray("Parameters"), object : TypeToken<List<GenericOutput>>() {
+                                    }.type)
                                 } catch (e: Exception) {
                                     Log.d("AyanLog", "Parameters is null.")
                                 }
