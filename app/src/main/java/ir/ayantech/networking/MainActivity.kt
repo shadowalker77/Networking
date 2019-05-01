@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        ayanApi = AyanApi.getAyanApiInstance(
+        ayanApi = AyanApi(
             { "4A1F899B6516E91180DE8AEEEED4CA9C" },
             "https://application.billingsystem.ayantech.ir/WebServices/Core.svc/"
         )

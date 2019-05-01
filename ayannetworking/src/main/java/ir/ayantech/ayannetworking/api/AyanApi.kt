@@ -14,36 +14,26 @@ import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
 import com.google.gson.reflect.TypeToken
 
-
-
 typealias ReCallApi = () -> Unit
 typealias GetUserToken = () -> String
 
-class AyanApi private constructor(
+class AyanApi(
     val getUserToken: GetUserToken? = null,
     val defaultBaseUrl: String = "",
     val timeout: Long = 30
 ) {
 
+    private var apiInterface: ApiInterface? = null
+
+    fun aaa(defaultBaseUrl: String, timeout: Long) =
+        (apiInterface ?: RetrofitClient.getInstance(defaultBaseUrl, timeout).create(ApiInterface::class.java).also {
+            apiInterface = it
+        })!!
+
     val wrappedPackages = ArrayList<WrappedPackage<*, *>>()
 
-    companion object {
-
-        private var apiInterface: ApiInterface? = null
-
-        fun getApiInterfaceInstance(defaultBaseUrl: String, timeout: Long) =
-            (apiInterface ?: RetrofitClient.getInstance(defaultBaseUrl).create(ApiInterface::class.java).also {
-                apiInterface = it
-            })!!
-
-        private var ayanApi: AyanApi? = null
-
-        fun getAyanApiInstance(getUserToken: GetUserToken? = null, defaultBaseUrl: String, timeout: Long = 30) =
-            ayanApi ?: AyanApi(getUserToken, defaultBaseUrl, timeout).also { ayanApi = it }
-    }
-
     inline fun <reified GenericOutput> ayanCall(
-        ayanCallingStatus: AyanCallingStatus<GenericOutput>,
+        ayanCallStatus: AyanCallStatus<GenericOutput>,
         endPoint: String,
         input: Any? = null,
         identity: Any? = null,
@@ -59,17 +49,17 @@ class AyanApi private constructor(
             request
         )
 
-        ayanCallingStatus.dispatchLoad()
+        ayanCallStatus.dispatchLoad()
         try {
             Log.d("AyanReq,$endPoint", Gson().toJson(request))
         } catch (e: Exception) {
         }
-        getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
+        aaa(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
                     wrappedPackage.reCallApi = {
-                        ayanCallingStatus.dispatchLoad()
-                        getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(
+                        ayanCallStatus.dispatchLoad()
+                        aaa(defaultBaseUrl, timeout).callApi(
                             wrappedPackage.url,
                             wrappedPackage.request
                         )
@@ -83,7 +73,7 @@ class AyanApi private constructor(
                                 Failure.NO_CODE_SERVER_ERROR_CODE,
                                 wrappedPackage.reCallApi
                             ).also { wrappedPackage.failure = it }
-                            ayanCallingStatus.dispatchFail(failure)
+                            ayanCallStatus.dispatchFail(failure)
                         } else {
                             val rawResponse = response.body()?.string()
                             Log.d("AyanRawLog", rawResponse)
@@ -96,8 +86,11 @@ class AyanApi private constructor(
                                 )
                             } catch (e: Exception) {
                                 try {
-                                    parameters = Gson().fromJson(jsonObject.getAsJsonArray("Parameters"), object : TypeToken<GenericOutput>() {
-                                    }.type)
+                                    parameters = Gson().fromJson(
+                                        jsonObject.getAsJsonArray("Parameters"),
+                                        object : TypeToken<GenericOutput>() {
+                                        }.type
+                                    )
                                 } catch (e: Exception) {
                                     Log.d("AyanLog", "Parameters is null.")
                                 }
@@ -106,22 +99,22 @@ class AyanApi private constructor(
                                 Gson().fromJson<Status>(jsonObject.getAsJsonObject("Status"), Status::class.java)
                             wrappedPackage.response = AyanResponse(parameters, status)
                             when (wrappedPackage.response!!.Status.Code) {
-                                "G00000" -> ayanCallingStatus.dispatchSuccess(wrappedPackage)
-                                "G00001" -> ayanCallingStatus.dispatchFail(
+                                "G00000" -> ayanCallStatus.dispatchSuccess(wrappedPackage)
+                                "G00001" -> ayanCallStatus.dispatchFail(
                                     Failure(
                                         FailureRepository.REMOTE,
                                         FailureType.SERVER_INTERNAL_ERROR, "G00001",
                                         wrappedPackage.reCallApi
                                     ).also { wrappedPackage.failure = it }
                                 )
-                                "G00002" -> ayanCallingStatus.dispatchFail(
+                                "G00002" -> ayanCallStatus.dispatchFail(
                                     Failure(
                                         FailureRepository.REMOTE,
                                         FailureType.LOGIN_REQUIRED, "G00002",
                                         wrappedPackage.reCallApi
                                     ).also { wrappedPackage.failure = it }
                                 )
-                                else -> ayanCallingStatus.dispatchFail(
+                                else -> ayanCallStatus.dispatchFail(
                                     Failure(
                                         FailureRepository.REMOTE,
                                         FailureType.UNKNOWN, wrappedPackage.response!!.Status.Code,
@@ -138,14 +131,14 @@ class AyanApi private constructor(
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
                         ).also { wrappedPackage.failure = it }
-                        ayanCallingStatus.dispatchFail(failure)
+                        ayanCallStatus.dispatchFail(failure)
                     }
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
-                        ayanCallingStatus.dispatchLoad()
-                        getApiInterfaceInstance(defaultBaseUrl, timeout).callApi(
+                        ayanCallStatus.dispatchLoad()
+                        aaa(defaultBaseUrl, timeout).callApi(
                             wrappedPackage.url,
                             wrappedPackage.request
                         )
@@ -187,7 +180,7 @@ class AyanApi private constructor(
                             wrappedPackage.reCallApi
                         ).also { wrappedPackage.failure = it }
                     }
-                    ayanCallingStatus.dispatchFail(failure)
+                    ayanCallStatus.dispatchFail(failure)
                 }
             })
         return wrappedPackage

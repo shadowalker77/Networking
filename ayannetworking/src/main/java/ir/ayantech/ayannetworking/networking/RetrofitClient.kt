@@ -24,7 +24,7 @@ class RetrofitClient private constructor() {
                 .build()
                 .also { retrofit = it }
 
-        fun getOkHttpInstance(timeout: Long): OkHttpClient {
+        private fun getOkHttpInstance(timeout: Long): OkHttpClient {
             val okHttpClientBuilder = OkHttpClient.Builder()
             okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
             okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)

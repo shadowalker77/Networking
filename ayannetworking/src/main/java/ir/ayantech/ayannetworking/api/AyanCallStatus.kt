@@ -8,23 +8,28 @@ typealias OnFailure = (failure: Failure) -> Unit
 typealias OnChangeStatus = (callingState: CallingState) -> Unit
 
 @Suppress("FunctionName")
-fun <T> AyanCallStatus(block: AyanCallingStatus<T>.() -> Unit) = AyanCallingStatus<T>().apply(block)
+fun <T> AyanCallStatus(block: AyanCallStatus<T>.() -> Unit) = AyanCallStatus.newInstance<T>().apply(block)
 
 @Suppress("FunctionName")
-fun <T> AyanCallStatus(ayanCommonCallingStatus: AyanCommonCallingStatus, block: AyanCallingStatus<T>.() -> Unit) =
-    AyanCallingStatus<T>(ayanCommonCallingStatus).apply(block)
+fun <T> AyanCallStatus(ayanCommonCallStatus: AyanCommonCallStatus, block: AyanCallStatus<T>.() -> Unit) =
+    AyanCallStatus<T>(ayanCommonCallStatus).apply(block)
 
 @Suppress("FunctionName")
-fun AyanCommonCallStatus(block: AyanCommonCallingStatus.() -> Unit) = AyanCommonCallingStatus().apply(block)
+fun AyanCommonCallStatus(block: AyanCommonCallStatus.() -> Unit) = AyanCommonCallStatus.newInstance().apply(block)
 
-class AyanCallingStatus<T>() {
-    private var ayanCommonCallingStatus = AyanCommonCallingStatus()
+class AyanCallStatus<T> private constructor() {
+
+    companion object {
+        fun <T> newInstance(): AyanCallStatus<T> = AyanCallStatus()
+    }
+
+    private var ayanCommonCallingStatus = AyanCommonCallStatus.newInstance()
     private var onSuccess: OnSuccess<T>? = null
 
     var callingState = CallingState.NOT_USED
 
-    constructor(ayanCommonCallingStatus: AyanCommonCallingStatus) : this() {
-        this.ayanCommonCallingStatus = ayanCommonCallingStatus
+    constructor(ayanCommonCallStatus: AyanCommonCallStatus) : this() {
+        this.ayanCommonCallingStatus = ayanCommonCallStatus
     }
 
     fun loading(block: OnLoading) {
@@ -35,8 +40,8 @@ class AyanCallingStatus<T>() {
         ayanCommonCallingStatus.failure(block)
     }
 
-    fun changeStutus(block: OnChangeStatus) {
-        ayanCommonCallingStatus.changeStutus(block)
+    fun changeStatus(block: OnChangeStatus) {
+        ayanCommonCallingStatus.changeStatus(block)
     }
 
     fun success(block: OnSuccess<T>) {
@@ -68,7 +73,12 @@ enum class CallingState {
     NOT_USED, LOADING, FAILED, SUCCESSFUL
 }
 
-class AyanCommonCallingStatus {
+class AyanCommonCallStatus private constructor() {
+
+    companion object {
+        fun newInstance(): AyanCommonCallStatus = AyanCommonCallStatus()
+    }
+
     private var onLoading: OnLoading? = null
     private var onFailure: OnFailure? = null
     private var onChangeStatus: OnChangeStatus? = null
@@ -81,7 +91,7 @@ class AyanCommonCallingStatus {
         onFailure = block
     }
 
-    fun changeStutus(block: OnChangeStatus) {
+    fun changeStatus(block: OnChangeStatus) {
         onChangeStatus = block
     }
 

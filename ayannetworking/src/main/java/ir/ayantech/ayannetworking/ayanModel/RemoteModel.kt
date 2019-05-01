@@ -7,5 +7,3 @@ data class Status(var Code: String, var Description: String)
 data class AyanRequest<T>(var Identity: Any?, var Parameters: T?)
 
 data class AyanResponse<T>(var Parameters: T?, var Status: Status)
-
-inline fun <reified T> toJson(input: T): String = ""
