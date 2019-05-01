@@ -3,6 +3,7 @@ package ir.ayantech.ayannetworking.api
 import android.util.Log
 import com.google.gson.Gson
 import com.google.gson.JsonParser
+import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.ayanModel.*
 import ir.ayantech.ayannetworking.networking.RetrofitClient
 import okhttp3.ResponseBody
@@ -12,7 +13,6 @@ import retrofit2.Response
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
-import com.google.gson.reflect.TypeToken
 
 typealias ReCallApi = () -> Unit
 typealias GetUserToken = () -> String
@@ -20,10 +20,12 @@ typealias GetUserToken = () -> String
 class AyanApi(
     val getUserToken: GetUserToken? = null,
     val defaultBaseUrl: String = "",
+    var commonCallStatus: AyanCommonCallStatus? = null,
     val timeout: Long = 30
 ) {
 
     private var apiInterface: ApiInterface? = null
+
 
     fun aaa(defaultBaseUrl: String, timeout: Long) =
         (apiInterface ?: RetrofitClient.getInstance(defaultBaseUrl, timeout).create(ApiInterface::class.java).also {
@@ -38,8 +40,14 @@ class AyanApi(
         input: Any? = null,
         identity: Any? = null,
         hasIdentity: Boolean = true,
+        commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
+        if (commonCallStatus != null)
+            ayanCallStatus.ayanCommonCallingStatus = commonCallStatus
+        else if (this.commonCallStatus != null)
+            ayanCallStatus.ayanCommonCallingStatus = this.commonCallStatus
+
         var finalIdentity: Any? = null
         if (hasIdentity && getUserToken != null) finalIdentity = Identity(getUserToken.invoke())
         if (identity != null) finalIdentity = identity

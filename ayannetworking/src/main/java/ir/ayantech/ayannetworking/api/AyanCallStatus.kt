@@ -12,7 +12,7 @@ fun <T> AyanCallStatus(block: AyanCallStatus<T>.() -> Unit) = AyanCallStatus.new
 
 @Suppress("FunctionName")
 fun <T> AyanCallStatus(ayanCommonCallStatus: AyanCommonCallStatus, block: AyanCallStatus<T>.() -> Unit) =
-    AyanCallStatus<T>(ayanCommonCallStatus).apply(block)
+    AyanCallStatus.newInstance<T>().also { it.ayanCommonCallingStatus = ayanCommonCallStatus }.apply(block)
 
 @Suppress("FunctionName")
 fun AyanCommonCallStatus(block: AyanCommonCallStatus.() -> Unit) = AyanCommonCallStatus.newInstance().apply(block)
@@ -23,26 +23,11 @@ class AyanCallStatus<T> private constructor() {
         fun <T> newInstance(): AyanCallStatus<T> = AyanCallStatus()
     }
 
-    private var ayanCommonCallingStatus = AyanCommonCallStatus.newInstance()
+    var ayanCommonCallingStatus: AyanCommonCallStatus? = null
+
     private var onSuccess: OnSuccess<T>? = null
 
     var callingState = CallingState.NOT_USED
-
-    constructor(ayanCommonCallStatus: AyanCommonCallStatus) : this() {
-        this.ayanCommonCallingStatus = ayanCommonCallStatus
-    }
-
-    fun loading(block: OnLoading) {
-        ayanCommonCallingStatus.loading(block)
-    }
-
-    fun failure(block: OnFailure) {
-        ayanCommonCallingStatus.failure(block)
-    }
-
-    fun changeStatus(block: OnChangeStatus) {
-        ayanCommonCallingStatus.changeStatus(block)
-    }
 
     fun success(block: OnSuccess<T>) {
         onSuccess = block
@@ -54,18 +39,18 @@ class AyanCallStatus<T> private constructor() {
     }
 
     fun dispatchLoad() {
-        ayanCommonCallingStatus.dispatchLoad()
+        ayanCommonCallingStatus?.dispatchLoad()
         dispatchOnChangeStatus(CallingState.LOADING)
     }
 
     fun dispatchFail(failure: Failure) {
-        ayanCommonCallingStatus.dispatchFail(failure)
+        ayanCommonCallingStatus?.dispatchFail(failure)
         dispatchOnChangeStatus(CallingState.FAILED)
     }
 
     fun dispatchOnChangeStatus(callingState: CallingState) {
         this.callingState = callingState
-        ayanCommonCallingStatus.dispatchChangeStatus(callingState)
+        ayanCommonCallingStatus?.dispatchChangeStatus(callingState)
     }
 }
 

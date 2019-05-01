@@ -6,6 +6,7 @@ import android.util.Log
 import ir.ayantech.ayannetworking.api.AyanApi
 import ir.ayantech.ayannetworking.api.AyanCallStatus
 import ir.ayantech.ayannetworking.api.AyanCommonCallStatus
+import ir.ayantech.ayannetworking.api.WrappedPackage
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -19,17 +20,20 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private var wrappedPackage: WrappedPackage<*, GetEndUserInquiryHistoryDetailOutputModel>? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
         ayanApi = AyanApi(
             { "4A1F899B6516E91180DE8AEEEED4CA9C" },
-            "https://application.billingsystem.ayantech.ir/WebServices/Core.svc/"
+            "https://application.billingsystem.ayantech.ir/WebServices/Core.svc/",
+            ayanCommonCallingStatus
         )
 
-        ayanApi.ayanCall<GetEndUserInquiryHistoryDetailOutputModel>(
-            AyanCallStatus(ayanCommonCallingStatus) {
+        wrappedPackage = ayanApi.ayanCall(
+            AyanCallStatus {
                 success {
                     Log.d("AyanLog", it.response.toString())
                     val retry = it.reCallApi
