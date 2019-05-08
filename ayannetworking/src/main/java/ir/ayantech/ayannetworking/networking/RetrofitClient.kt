@@ -33,5 +33,9 @@ class RetrofitClient private constructor() {
             okHttpClientBuilder.proxy(Proxy.NO_PROXY)
             return okHttpClient ?: okHttpClientBuilder.build().also { okHttpClient = it }
         }
+
+        fun cancelCalls() {
+            okHttpClient?.dispatcher()?.cancelAll()
+        }
     }
 }
