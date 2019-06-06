@@ -26,7 +26,6 @@ class AyanApi(
 
     private var apiInterface: ApiInterface? = null
 
-
     fun aaa(defaultBaseUrl: String, timeout: Long) =
         (apiInterface ?: RetrofitClient.getInstance(defaultBaseUrl, timeout).create(ApiInterface::class.java).also {
             apiInterface = it

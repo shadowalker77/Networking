@@ -1,5 +1,6 @@
 package ir.ayantech.ayannetworking.networking
 
+import android.os.Build
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
@@ -31,11 +32,28 @@ class RetrofitClient private constructor() {
             okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
             okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
             okHttpClientBuilder.proxy(Proxy.NO_PROXY)
+            okHttpClientBuilder.addInterceptor {
+                val userAgentRequest = it.request()
+                    .newBuilder()
+                    .header("User-Agent", getFormattedDeviceInfo())
+                    .build()
+                it.proceed(userAgentRequest)
+            }
             return okHttpClient ?: okHttpClientBuilder.build().also { okHttpClient = it }
         }
 
         fun cancelCalls() {
             okHttpClient?.dispatcher()?.cancelAll()
+        }
+
+        private fun getFormattedDeviceInfo(): String {
+            val information = listOf(
+                "BuildVersion:(${Build.VERSION.RELEASE})",
+                "Brand:(${Build.BRAND})",
+                "Model:(${Build.MODEL})",
+                "Device:(${Build.DEVICE})"
+            )
+            return information.joinToString(separator = " ")
         }
     }
 }
