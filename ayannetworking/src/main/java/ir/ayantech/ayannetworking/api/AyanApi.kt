@@ -64,81 +64,85 @@ class AyanApi(
         aaa(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
-                    wrappedPackage.reCallApi = {
-                        ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout).callApi(
-                            wrappedPackage.url,
-                            wrappedPackage.request
-                        )
-                            .enqueue(this)
-                    }
-                    if (response.isSuccessful) {
-                        if (response.body() == null) {
+                    try {
+                        wrappedPackage.reCallApi = {
+                            ayanCallStatus.dispatchLoad()
+                            aaa(defaultBaseUrl, timeout).callApi(
+                                wrappedPackage.url,
+                                wrappedPackage.request
+                            )
+                                .enqueue(this)
+                        }
+                        if (response.isSuccessful) {
+                            if (response.body() == null) {
+                                val failure = Failure(
+                                    FailureRepository.REMOTE,
+                                    FailureType.UNKNOWN,
+                                    Failure.NO_CODE_SERVER_ERROR_CODE,
+                                    wrappedPackage.reCallApi
+                                ).also { wrappedPackage.failure = it }
+                                ayanCallStatus.dispatchFail(failure)
+                            } else {
+                                val rawResponse = response.body()?.string()
+                                Log.d("AyanRawLog", rawResponse)
+                                val jsonObject = JsonParser().parse(rawResponse).asJsonObject
+                                var parameters: GenericOutput? = null
+                                try {
+                                    parameters = Gson().fromJson<GenericOutput>(
+                                        jsonObject.getAsJsonObject("Parameters"),
+                                        GenericOutput::class.java
+                                    )
+                                } catch (e: Exception) {
+                                    try {
+                                        parameters = Gson().fromJson(
+                                            jsonObject.getAsJsonArray("Parameters"),
+                                            object : TypeToken<GenericOutput>() {
+                                            }.type
+                                        )
+                                    } catch (e: Exception) {
+                                        Log.d("AyanLog", "Parameters is null.")
+                                    }
+                                }
+                                val status =
+                                    Gson().fromJson<Status>(jsonObject.getAsJsonObject("Status"), Status::class.java)
+                                wrappedPackage.response = AyanResponse(parameters, status)
+                                when (wrappedPackage.response!!.Status.Code) {
+                                    "G00000" -> ayanCallStatus.dispatchSuccess(wrappedPackage)
+                                    "G00001" -> ayanCallStatus.dispatchFail(
+                                        Failure(
+                                            FailureRepository.REMOTE,
+                                            FailureType.SERVER_INTERNAL_ERROR, "G00001",
+                                            wrappedPackage.reCallApi
+                                        ).also { wrappedPackage.failure = it }
+                                    )
+                                    "G00002" -> ayanCallStatus.dispatchFail(
+                                        Failure(
+                                            FailureRepository.REMOTE,
+                                            FailureType.LOGIN_REQUIRED, "G00002",
+                                            wrappedPackage.reCallApi
+                                        ).also { wrappedPackage.failure = it }
+                                    )
+                                    else -> ayanCallStatus.dispatchFail(
+                                        Failure(
+                                            FailureRepository.REMOTE,
+                                            FailureType.UNKNOWN, wrappedPackage.response!!.Status.Code,
+                                            wrappedPackage.reCallApi,
+                                            wrappedPackage.response!!.Status.Description
+                                        ).also { wrappedPackage.failure = it }
+                                    )
+                                }
+                            }
+                        } else {
                             val failure = Failure(
                                 FailureRepository.REMOTE,
-                                FailureType.UNKNOWN,
-                                Failure.NO_CODE_SERVER_ERROR_CODE,
+                                FailureType.NOT_200,
+                                Failure.APP_INTERNAL_ERROR_CODE,
                                 wrappedPackage.reCallApi
                             ).also { wrappedPackage.failure = it }
                             ayanCallStatus.dispatchFail(failure)
-                        } else {
-                            val rawResponse = response.body()?.string()
-                            Log.d("AyanRawLog", rawResponse)
-                            val jsonObject = JsonParser().parse(rawResponse).asJsonObject
-                            var parameters: GenericOutput? = null
-                            try {
-                                parameters = Gson().fromJson<GenericOutput>(
-                                    jsonObject.getAsJsonObject("Parameters"),
-                                    GenericOutput::class.java
-                                )
-                            } catch (e: Exception) {
-                                try {
-                                    parameters = Gson().fromJson(
-                                        jsonObject.getAsJsonArray("Parameters"),
-                                        object : TypeToken<GenericOutput>() {
-                                        }.type
-                                    )
-                                } catch (e: Exception) {
-                                    Log.d("AyanLog", "Parameters is null.")
-                                }
-                            }
-                            val status =
-                                Gson().fromJson<Status>(jsonObject.getAsJsonObject("Status"), Status::class.java)
-                            wrappedPackage.response = AyanResponse(parameters, status)
-                            when (wrappedPackage.response!!.Status.Code) {
-                                "G00000" -> ayanCallStatus.dispatchSuccess(wrappedPackage)
-                                "G00001" -> ayanCallStatus.dispatchFail(
-                                    Failure(
-                                        FailureRepository.REMOTE,
-                                        FailureType.SERVER_INTERNAL_ERROR, "G00001",
-                                        wrappedPackage.reCallApi
-                                    ).also { wrappedPackage.failure = it }
-                                )
-                                "G00002" -> ayanCallStatus.dispatchFail(
-                                    Failure(
-                                        FailureRepository.REMOTE,
-                                        FailureType.LOGIN_REQUIRED, "G00002",
-                                        wrappedPackage.reCallApi
-                                    ).also { wrappedPackage.failure = it }
-                                )
-                                else -> ayanCallStatus.dispatchFail(
-                                    Failure(
-                                        FailureRepository.REMOTE,
-                                        FailureType.UNKNOWN, wrappedPackage.response!!.Status.Code,
-                                        wrappedPackage.reCallApi,
-                                        wrappedPackage.response!!.Status.Description
-                                    ).also { wrappedPackage.failure = it }
-                                )
-                            }
                         }
-                    } else {
-                        val failure = Failure(
-                            FailureRepository.REMOTE,
-                            FailureType.NOT_200,
-                            Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
-                        ayanCallStatus.dispatchFail(failure)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
                     }
                 }
 

@@ -26,6 +26,9 @@ class AyanCallStatus<T> private constructor() {
     var ayanCommonCallingStatus: AyanCommonCallStatus? = null
 
     private var onSuccess: OnSuccess<T>? = null
+    private var onLoading: OnLoading? = null
+    private var onFailure: OnFailure? = null
+    private var onChangeStatus: OnChangeStatus? = null
 
     var callingState = CallingState.NOT_USED
 
@@ -33,23 +36,45 @@ class AyanCallStatus<T> private constructor() {
         onSuccess = block
     }
 
+    fun loading(block: OnLoading) {
+        onLoading = block
+    }
+
+    fun failure(block: OnFailure) {
+        onFailure = block
+    }
+
+    fun changeStatus(block: OnChangeStatus) {
+        onChangeStatus = block
+    }
+
     fun dispatchSuccess(wrappedPackage: WrappedPackage<*, T>) {
         onSuccess?.invoke(wrappedPackage)
+        ayanCommonCallingStatus?.dispatchSuccess(wrappedPackage)
         dispatchOnChangeStatus(CallingState.SUCCESSFUL)
     }
 
     fun dispatchLoad() {
-        ayanCommonCallingStatus?.dispatchLoad()
+        if (onLoading == null)
+            ayanCommonCallingStatus?.dispatchLoad()
+        else
+            onLoading?.invoke()
         dispatchOnChangeStatus(CallingState.LOADING)
     }
 
     fun dispatchFail(failure: Failure) {
-        ayanCommonCallingStatus?.dispatchFail(failure)
+        if (onFailure == null)
+            ayanCommonCallingStatus?.dispatchFail(failure)
+        else
+            onFailure?.invoke(failure)
         dispatchOnChangeStatus(CallingState.FAILED)
     }
 
     fun dispatchOnChangeStatus(callingState: CallingState) {
-        this.callingState = callingState
+        if (onChangeStatus == null)
+            this.callingState = callingState
+        else
+            onChangeStatus?.invoke(callingState)
         ayanCommonCallingStatus?.dispatchChangeStatus(callingState)
     }
 }
@@ -64,9 +89,14 @@ class AyanCommonCallStatus private constructor() {
         fun newInstance(): AyanCommonCallStatus = AyanCommonCallStatus()
     }
 
+    private var onSuccess: OnSuccess<*>? = null
     private var onLoading: OnLoading? = null
     private var onFailure: OnFailure? = null
     private var onChangeStatus: OnChangeStatus? = null
+
+    fun success(block: OnSuccess<*>) {
+        onSuccess = block
+    }
 
     fun loading(block: OnLoading) {
         onLoading = block
@@ -78,6 +108,10 @@ class AyanCommonCallStatus private constructor() {
 
     fun changeStatus(block: OnChangeStatus) {
         onChangeStatus = block
+    }
+
+    fun dispatchSuccess(wrappedPackage: WrappedPackage<*, *>) {
+        onSuccess?.invoke(wrappedPackage)
     }
 
     fun dispatchLoad() {
