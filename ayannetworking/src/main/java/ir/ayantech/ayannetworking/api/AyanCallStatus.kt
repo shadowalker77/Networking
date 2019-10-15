@@ -8,14 +8,21 @@ typealias OnFailure = (failure: Failure) -> Unit
 typealias OnChangeStatus = (callingState: CallingState) -> Unit
 
 @Suppress("FunctionName")
-fun <T> AyanCallStatus(block: AyanCallStatus<T>.() -> Unit) = AyanCallStatus.newInstance<T>().apply(block)
+fun <T> AyanCallStatus(block: AyanCallStatus<T>.() -> Unit) =
+    AyanCallStatus.newInstance<T>().apply(block)
 
 @Suppress("FunctionName")
-fun <T> AyanCallStatus(ayanCommonCallStatus: AyanCommonCallStatus, block: AyanCallStatus<T>.() -> Unit) =
-    AyanCallStatus.newInstance<T>().also { it.ayanCommonCallingStatus = ayanCommonCallStatus }.apply(block)
+fun <T> AyanCallStatus(
+    ayanCommonCallStatus: AyanCommonCallStatus,
+    block: AyanCallStatus<T>.() -> Unit
+) =
+    AyanCallStatus.newInstance<T>().also {
+        it.ayanCommonCallingStatus = ayanCommonCallStatus
+    }.apply(block)
 
 @Suppress("FunctionName")
-fun AyanCommonCallStatus(block: AyanCommonCallStatus.() -> Unit) = AyanCommonCallStatus.newInstance().apply(block)
+fun AyanCommonCallStatus(block: AyanCommonCallStatus.() -> Unit) =
+    AyanCommonCallStatus.newInstance().apply(block)
 
 class AyanCallStatus<T> private constructor() {
 
@@ -49,25 +56,27 @@ class AyanCallStatus<T> private constructor() {
     }
 
     fun dispatchSuccess(wrappedPackage: WrappedPackage<*, T>) {
-        onSuccess?.invoke(wrappedPackage)
-        ayanCommonCallingStatus?.dispatchSuccess(wrappedPackage)
         dispatchOnChangeStatus(CallingState.SUCCESSFUL)
+        if (onSuccess == null)
+            ayanCommonCallingStatus?.dispatchSuccess(wrappedPackage)
+        else
+            onSuccess?.invoke(wrappedPackage)
     }
 
     fun dispatchLoad() {
+        dispatchOnChangeStatus(CallingState.LOADING)
         if (onLoading == null)
             ayanCommonCallingStatus?.dispatchLoad()
         else
             onLoading?.invoke()
-        dispatchOnChangeStatus(CallingState.LOADING)
     }
 
     fun dispatchFail(failure: Failure) {
+        dispatchOnChangeStatus(CallingState.FAILED)
         if (onFailure == null)
             ayanCommonCallingStatus?.dispatchFail(failure)
         else
             onFailure?.invoke(failure)
-        dispatchOnChangeStatus(CallingState.FAILED)
     }
 
     fun dispatchOnChangeStatus(callingState: CallingState) {
