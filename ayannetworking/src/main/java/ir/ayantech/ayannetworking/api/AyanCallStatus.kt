@@ -81,10 +81,9 @@ class AyanCallStatus<T> private constructor() {
 
     fun dispatchOnChangeStatus(callingState: CallingState) {
         if (onChangeStatus == null)
-            this.callingState = callingState
+            ayanCommonCallingStatus?.dispatchChangeStatus(callingState)
         else
             onChangeStatus?.invoke(callingState)
-        ayanCommonCallingStatus?.dispatchChangeStatus(callingState)
     }
 }
 
