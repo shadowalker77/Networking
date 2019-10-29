@@ -2,8 +2,10 @@ package ir.ayantech.ayannetworking.networking
 
 import android.os.Build
 import okhttp3.OkHttpClient
+import okhttp3.Protocol
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
@@ -32,6 +34,13 @@ class RetrofitClient private constructor() {
             okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
             okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
             okHttpClientBuilder.proxy(Proxy.NO_PROXY)
+//            okHttpClientBuilder.proxy(
+//                Proxy(
+//                    Proxy.Type.HTTP,
+//                    InetSocketAddress("192.168.1.10", 8888)
+//                )
+//            )
+            okHttpClientBuilder.protocols(arrayListOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
             okHttpClientBuilder.addInterceptor {
                 val userAgentRequest = it.request()
                     .newBuilder()

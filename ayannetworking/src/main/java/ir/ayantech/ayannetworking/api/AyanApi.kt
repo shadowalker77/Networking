@@ -85,6 +85,7 @@ class AyanApi(
                             } else {
                                 val rawResponse = response.body()?.string()
                                 Log.d("AyanRawLog", rawResponse)
+                                Log.d("AyanProtocol", response.raw().protocol().name)
                                 val jsonObject = JsonParser().parse(rawResponse).asJsonObject
                                 var parameters: GenericOutput? = null
                                 try {
