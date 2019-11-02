@@ -10,6 +10,7 @@ import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
@@ -27,7 +28,10 @@ class AyanApi(
     private var apiInterface: ApiInterface? = null
 
     fun aaa(defaultBaseUrl: String, timeout: Long) =
-        (apiInterface ?: RetrofitClient.getInstance(defaultBaseUrl, timeout).create(ApiInterface::class.java).also {
+        (apiInterface ?: RetrofitClient.getInstance(
+            defaultBaseUrl,
+            timeout
+        ).create(ApiInterface::class.java).also {
             apiInterface = it
         })!!
 
@@ -63,7 +67,10 @@ class AyanApi(
         }
         aaa(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
             .enqueue(object : Callback<ResponseBody> {
-                override fun onResponse(call: Call<ResponseBody>, response: Response<ResponseBody>) {
+                override fun onResponse(
+                    call: Call<ResponseBody>,
+                    response: Response<ResponseBody>
+                ) {
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
@@ -105,7 +112,10 @@ class AyanApi(
                                     }
                                 }
                                 val status =
-                                    Gson().fromJson<Status>(jsonObject.getAsJsonObject("Status"), Status::class.java)
+                                    Gson().fromJson<Status>(
+                                        jsonObject.getAsJsonObject("Status"),
+                                        Status::class.java
+                                    )
                                 wrappedPackage.response = AyanResponse(parameters, status)
                                 when (wrappedPackage.response!!.Status.Code) {
                                     "G00000" -> ayanCallStatus.dispatchSuccess(wrappedPackage)
@@ -126,7 +136,8 @@ class AyanApi(
                                     else -> ayanCallStatus.dispatchFail(
                                         Failure(
                                             FailureRepository.REMOTE,
-                                            FailureType.UNKNOWN, wrappedPackage.response!!.Status.Code,
+                                            FailureType.UNKNOWN,
+                                            wrappedPackage.response!!.Status.Code,
                                             wrappedPackage.reCallApi,
                                             wrappedPackage.response!!.Status.Description
                                         ).also { wrappedPackage.failure = it }
@@ -156,20 +167,26 @@ class AyanApi(
                         )
                             .enqueue(this)
                     }
-                    val failure = when (t) {
-                        is UnknownHostException -> Failure(
+                    val failure = when {
+                        t is UnknownHostException -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.NO_INTERNET_CONNECTION,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
                         ).also { wrappedPackage.failure = it }
-                        is TimeoutException -> Failure(
+                        t is TimeoutException -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
                         ).also { wrappedPackage.failure = it }
-                        is SocketTimeoutException -> Failure(
+                        t is SocketTimeoutException -> Failure(
+                            FailureRepository.LOCAL,
+                            FailureType.TIMEOUT,
+                            Failure.APP_INTERNAL_ERROR_CODE,
+                            wrappedPackage.reCallApi
+                        ).also { wrappedPackage.failure = it }
+                        (t is InterruptedIOException && t.message == "timeout") -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
