@@ -5,6 +5,7 @@ import com.google.gson.Gson
 import com.google.gson.JsonParser
 import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.ayanModel.*
+import ir.ayantech.ayannetworking.helper.toPrettyFormat
 import ir.ayantech.ayannetworking.networking.RetrofitClient
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -22,7 +23,8 @@ class AyanApi(
     val getUserToken: GetUserToken? = null,
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
-    val timeout: Long = 30
+    val timeout: Long = 30,
+    val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
 
     private var apiInterface: ApiInterface? = null
@@ -62,7 +64,13 @@ class AyanApi(
 
         ayanCallStatus.dispatchLoad()
         try {
-            Log.d("AyanReq,$endPoint", Gson().toJson(request))
+            if (logLevel == LogLevel.LOG_ALL) {
+                try {
+                    Log.d("AyanReq", endPoint + ":\n" + Gson().toJson(request).toPrettyFormat())
+                } catch (e: Exception) {
+                    Log.d("AyanReq", endPoint + ":\n" + Gson().toJson(request))
+                }
+            }
         } catch (e: Exception) {
         }
         aaa(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
@@ -91,8 +99,21 @@ class AyanApi(
                                 ayanCallStatus.dispatchFail(failure)
                             } else {
                                 val rawResponse = response.body()?.string()
-                                Log.d("AyanRawLog", rawResponse)
-                                Log.d("AyanProtocol", response.raw().protocol().name)
+                                if (logLevel == LogLevel.LOG_ALL) {
+                                    try {
+                                        Log.d(
+                                            "AyanRawResponse",
+                                            endPoint + ":\n" + rawResponse?.toPrettyFormat()
+                                        )
+                                    } catch (e: Exception) {
+                                        Log.d(
+                                            "AyanRawResponse",
+                                            endPoint + ":\n" + (rawResponse ?: "")
+                                        )
+                                    }
+                                }
+                                if (logLevel == LogLevel.LOG_ALL)
+                                    Log.d("AyanProtocol", response.raw().protocol().name)
                                 val jsonObject = JsonParser().parse(rawResponse).asJsonObject
                                 var parameters: GenericOutput? = null
                                 try {
@@ -108,7 +129,8 @@ class AyanApi(
                                             }.type
                                         )
                                     } catch (e: Exception) {
-                                        Log.d("AyanLog", "Parameters is null.")
+                                        if (logLevel == LogLevel.LOG_ALL)
+                                            Log.d("AyanLog", "Parameters is null.")
                                     }
                                 }
                                 val status =
@@ -213,6 +235,22 @@ class AyanApi(
                 }
             })
         return wrappedPackage
+    }
+
+    inline fun <reified GenericOutput> simpleCall(
+        endPoint: String,
+        input: Any? = null,
+        crossinline onSuccess: (GenericOutput?) -> Unit
+    ) {
+        ayanCall<GenericOutput>(
+            AyanCallStatus {
+                success {
+                    onSuccess(it.response?.Parameters)
+                }
+            },
+            endPoint,
+            input
+        )
     }
 }
 

@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
 
         ayanApi = AyanApi(
             { "4A1F899B6516E91180DE8AEEEED4CA9C" },
-            "https://application2.billingsystem.ayantech.ir/WebServices/Core.svc/",
+            "https://application.billingsystem.ayantech.ir/WebServices/Core.svc/",
             ayanCommonCallingStatus
         )
 
@@ -43,6 +43,11 @@ class MainActivity : AppCompatActivity() {
             "GetEndUserInquiryHistoryDetail",
             GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
         )
+
+        ayanApi.simpleCall<GetEndUserInquiryHistoryDetailOutputModel>("GetEndUserInquiryHistoryDetail",
+            GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")) {
+            Log.d("SimpleCall", it.toString())
+        }
     }
 }
 
