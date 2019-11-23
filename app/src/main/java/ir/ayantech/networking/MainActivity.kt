@@ -7,6 +7,7 @@ import ir.ayantech.ayannetworking.api.AyanApi
 import ir.ayantech.ayannetworking.api.AyanCallStatus
 import ir.ayantech.ayannetworking.api.AyanCommonCallStatus
 import ir.ayantech.ayannetworking.api.WrappedPackage
+import ir.ayantech.ayannetworking.networking.RetrofitClient
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -43,6 +44,7 @@ class MainActivity : AppCompatActivity() {
             "GetEndUserInquiryHistoryDetail",
             GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
         )
+        RetrofitClient.cancelCalls()
 
         ayanApi.simpleCall<GetEndUserInquiryHistoryDetailOutputModel>("GetEndUserInquiryHistoryDetail",
             GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")) {

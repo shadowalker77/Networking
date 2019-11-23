@@ -11,6 +11,7 @@ import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
@@ -211,6 +212,12 @@ class AyanApi(
                         (t is InterruptedIOException && t.message == "timeout") -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
+                            Failure.APP_INTERNAL_ERROR_CODE,
+                            wrappedPackage.reCallApi
+                        ).also { wrappedPackage.failure = it }
+                        (t is IOException && t.message == "Canceled") -> Failure(
+                            FailureRepository.LOCAL,
+                            FailureType.CANCELED,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
                         ).also { wrappedPackage.failure = it }
