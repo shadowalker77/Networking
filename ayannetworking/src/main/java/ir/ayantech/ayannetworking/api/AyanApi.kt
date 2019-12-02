@@ -168,6 +168,9 @@ class AyanApi(
                                 }
                             }
                         } else {
+                            if (logLevel == LogLevel.LOG_ALL) {
+                                Log.e("AyanRawResponse", response.body()?.string() ?: "")
+                            }
                             val failure = Failure(
                                 FailureRepository.REMOTE,
                                 FailureType.NOT_200,
