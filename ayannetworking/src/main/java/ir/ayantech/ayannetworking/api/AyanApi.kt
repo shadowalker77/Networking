@@ -142,13 +142,6 @@ class AyanApi(
                                 wrappedPackage.response = AyanResponse(parameters, status)
                                 when (wrappedPackage.response!!.Status.Code) {
                                     "G00000" -> ayanCallStatus.dispatchSuccess(wrappedPackage)
-                                    "G00001" -> ayanCallStatus.dispatchFail(
-                                        Failure(
-                                            FailureRepository.REMOTE,
-                                            FailureType.SERVER_INTERNAL_ERROR, "G00001",
-                                            wrappedPackage.reCallApi
-                                        ).also { wrappedPackage.failure = it }
-                                    )
                                     "G00002" -> ayanCallStatus.dispatchFail(
                                         Failure(
                                             FailureRepository.REMOTE,

@@ -13,7 +13,6 @@ enum class FailureType {
     CANCELED,
     LOGIN_REQUIRED,
     NOT_200,
-    SERVER_INTERNAL_ERROR,
     UNKNOWN
 }
 
@@ -35,7 +34,6 @@ class Failure(
             FailureType.CANCELED -> "ارتباط با سرور توسط کاربر لغو شد."
             FailureType.LOGIN_REQUIRED -> "خطای احراز هویت، لطفا دوباره وارد شوید."
             FailureType.NOT_200 -> "خطای داخلی، پاسخ دریافت شده نامعتبر است."
-            FailureType.SERVER_INTERNAL_ERROR -> "خطای سرور، لطفا در صورت تکرار با پشتیبانی تماس بگیرید."
             FailureType.UNKNOWN -> "خطای داخلی، لطفا در صورت تکرار با پشتیبانی تماس بگیرید."
         }
     }
