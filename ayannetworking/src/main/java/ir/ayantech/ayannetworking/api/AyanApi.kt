@@ -1,8 +1,7 @@
 package ir.ayantech.ayannetworking.api
 
 import android.util.Log
-import com.google.gson.Gson
-import com.google.gson.JsonParser
+import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.ayanModel.*
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
@@ -118,21 +117,27 @@ class AyanApi(
                                 val jsonObject = JsonParser().parse(rawResponse).asJsonObject
                                 var parameters: GenericOutput? = null
                                 try {
-                                    parameters = Gson().fromJson<GenericOutput>(
-                                        jsonObject.getAsJsonObject("Parameters"),
-                                        GenericOutput::class.java
-                                    )
-                                } catch (e: Exception) {
-                                    try {
-                                        parameters = Gson().fromJson(
-                                            jsonObject.getAsJsonArray("Parameters"),
-                                            object : TypeToken<GenericOutput>() {
-                                            }.type
-                                        )
-                                    } catch (e: Exception) {
-                                        if (logLevel == LogLevel.LOG_ALL)
-                                            Log.d("AyanLog", "Parameters is null.")
+                                    parameters = when (jsonObject.get("Parameters")) {
+                                        is JsonObject -> {
+                                            Gson().fromJson<GenericOutput>(
+                                                jsonObject.getAsJsonObject("Parameters"),
+                                                GenericOutput::class.java
+                                            )
+                                        }
+                                        is JsonArray -> {
+                                            Gson().fromJson(
+                                                jsonObject.getAsJsonArray("Parameters"),
+                                                object : TypeToken<GenericOutput>() {
+                                                }.type
+                                            )
+                                        }
+                                        is JsonPrimitive -> {
+                                            (jsonObject.getAsJsonPrimitive("Parameters").asString) as GenericOutput
+                                        }
+                                        else -> null
                                     }
+                                } catch (e: Exception) {
+
                                 }
                                 val status =
                                     Gson().fromJson<Status>(
