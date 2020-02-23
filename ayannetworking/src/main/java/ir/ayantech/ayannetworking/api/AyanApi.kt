@@ -1,5 +1,6 @@
 package ir.ayantech.ayannetworking.api
 
+import android.content.Context
 import android.util.Log
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
@@ -20,6 +21,7 @@ typealias ReCallApi = () -> Unit
 typealias GetUserToken = () -> String
 
 class AyanApi(
+    val context: Context?,
     val getUserToken: GetUserToken? = null,
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
@@ -27,10 +29,27 @@ class AyanApi(
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
 
+    @Deprecated("This method has been deprecated. Use the constructor with context passed to it.")
+    constructor(
+        getUserToken: GetUserToken? = null,
+        defaultBaseUrl: String = "",
+        commonCallStatus: AyanCommonCallStatus? = null,
+        timeout: Long = 30,
+        logLevel: LogLevel = LogLevel.LOG_ALL
+    ) : this(
+        null,
+        getUserToken,
+        defaultBaseUrl,
+        commonCallStatus,
+        timeout,
+        logLevel
+    )
+
     private var apiInterface: ApiInterface? = null
 
     fun aaa(defaultBaseUrl: String, timeout: Long) =
         (apiInterface ?: RetrofitClient.getInstance(
+            context,
             defaultBaseUrl,
             timeout
         ).create(ApiInterface::class.java).also {
