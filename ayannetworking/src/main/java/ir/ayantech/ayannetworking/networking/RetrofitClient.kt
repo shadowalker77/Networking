@@ -66,6 +66,7 @@ class RetrofitClient private constructor() {
                 "Brand:(${Build.BRAND})",
                 "Model:(${Build.MODEL})",
                 "Device:(${Build.DEVICE})",
+                "AppVersion:(${context?.packageManager?.getPackageInfo(context.packageName, 0)?.versionName})",
                 "Sign:(${sign})"
             )
             return information.joinToString(separator = " ")

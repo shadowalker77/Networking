@@ -26,6 +26,9 @@ class AyanApi(
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
     val timeout: Long = 30,
+    val addMethodNameToIdentity: Boolean = false,
+    val stringParameters: Boolean = false,
+    val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
 
@@ -42,6 +45,9 @@ class AyanApi(
         defaultBaseUrl,
         commonCallStatus,
         timeout,
+        false,
+        false,
+        null,
         logLevel
     )
 
@@ -75,9 +81,12 @@ class AyanApi(
         var finalIdentity: Any? = null
         if (hasIdentity && getUserToken != null) finalIdentity = Identity(getUserToken.invoke())
         if (identity != null) finalIdentity = identity
-        val request = AyanRequest(finalIdentity, input)
+        if (addMethodNameToIdentity && finalIdentity is Identity) finalIdentity.MethodName =
+            endPoint
+        val request =
+            AyanRequest(finalIdentity, if (stringParameters) Gson().toJson(input) else input)
         val wrappedPackage = WrappedPackage<Any, GenericOutput>(
-            baseUrl + endPoint,
+            baseUrl + (forceEndPoint ?: endPoint),
             request
         )
 
@@ -102,9 +111,9 @@ class AyanApi(
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
                             aaa(defaultBaseUrl, timeout).callApi(
-                                wrappedPackage.url,
-                                wrappedPackage.request
-                            )
+                                    wrappedPackage.url,
+                                    wrappedPackage.request
+                                )
                                 .enqueue(this)
                         }
                         if (response.isSuccessful) {
@@ -138,7 +147,7 @@ class AyanApi(
                                 try {
                                     parameters = when (jsonObject.get("Parameters")) {
                                         is JsonObject -> {
-                                            Gson().fromJson<GenericOutput>(
+                                            Gson().fromJson(
                                                 jsonObject.getAsJsonObject("Parameters"),
                                                 GenericOutput::class.java
                                             )
@@ -151,15 +160,25 @@ class AyanApi(
                                             )
                                         }
                                         is JsonPrimitive -> {
-                                            (jsonObject.getAsJsonPrimitive("Parameters").asString) as GenericOutput
+                                            (jsonObject.getAsJsonPrimitive("Parameters").asString)?.let {
+                                                if (stringParameters)
+                                                    Gson().fromJson(
+                                                        it,
+                                                        GenericOutput::class.java
+                                                    )
+                                                else
+                                                    it as GenericOutput
+                                            }
+
                                         }
                                         else -> null
                                     }
                                 } catch (e: Exception) {
-
+                                    if (logLevel == LogLevel.LOG_ALL && !e.message.isNullOrEmpty())
+                                        Log.e("Attention", e.message)
                                 }
                                 val status =
-                                    Gson().fromJson<Status>(
+                                    Gson().fromJson(
                                         jsonObject.getAsJsonObject("Status"),
                                         Status::class.java
                                     )
@@ -205,9 +224,9 @@ class AyanApi(
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
                         aaa(defaultBaseUrl, timeout).callApi(
-                            wrappedPackage.url,
-                            wrappedPackage.request
-                        )
+                                wrappedPackage.url,
+                                wrappedPackage.request
+                            )
                             .enqueue(this)
                     }
                     val failure = when {
@@ -294,6 +313,7 @@ class WrappedPackage<GenericInput, GenericOutput>
     companion object {
 
         private var uniqueId = 1
+
         @Synchronized
         private fun getNewPackageId() = uniqueId.also { uniqueId++ }
 

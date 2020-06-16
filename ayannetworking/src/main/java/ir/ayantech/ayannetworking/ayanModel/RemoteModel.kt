@@ -1,6 +1,6 @@
 package ir.ayantech.ayannetworking.ayanModel
 
-data class Identity(var Token: String)
+data class Identity(var Token: String, var MethodName: String? = null)
 
 data class Status(var Code: String, var Description: String)
 
