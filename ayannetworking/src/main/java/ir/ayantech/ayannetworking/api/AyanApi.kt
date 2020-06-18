@@ -26,7 +26,6 @@ class AyanApi(
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
     val timeout: Long = 30,
-    val addMethodNameToIdentity: Boolean = false,
     val stringParameters: Boolean = false,
     val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
@@ -45,7 +44,6 @@ class AyanApi(
         defaultBaseUrl,
         commonCallStatus,
         timeout,
-        false,
         false,
         null,
         logLevel
@@ -81,10 +79,14 @@ class AyanApi(
         var finalIdentity: Any? = null
         if (hasIdentity && getUserToken != null) finalIdentity = Identity(getUserToken.invoke())
         if (identity != null) finalIdentity = identity
-        if (addMethodNameToIdentity && finalIdentity is Identity) finalIdentity.MethodName =
-            endPoint
         val request =
-            AyanRequest(finalIdentity, if (stringParameters) Gson().toJson(input) else input)
+            AyanRequest(
+                finalIdentity, if (stringParameters) {
+                    EscapedParameters(Gson().toJson(input), endPoint)
+                } else {
+                    input
+                }
+            )
         val finalUrl = baseUrl + (forceEndPoint ?: endPoint)
         val wrappedPackage = WrappedPackage<Any, GenericOutput>(
             finalUrl,
@@ -148,6 +150,12 @@ class AyanApi(
                                 try {
                                     parameters = when (jsonObject.get("Parameters")) {
                                         is JsonObject -> {
+                                            if (stringParameters)
+                                                Gson().fromJson(
+                                                    (jsonObject.get("Parameters") as JsonObject).get("Params"),
+                                                    GenericOutput::class.java
+                                                )
+                                            else
                                             Gson().fromJson(
                                                 jsonObject.getAsJsonObject("Parameters"),
                                                 GenericOutput::class.java
@@ -161,16 +169,7 @@ class AyanApi(
                                             )
                                         }
                                         is JsonPrimitive -> {
-                                            (jsonObject.getAsJsonPrimitive("Parameters").asString)?.let {
-                                                if (stringParameters)
-                                                    Gson().fromJson(
-                                                        it,
-                                                        GenericOutput::class.java
-                                                    )
-                                                else
-                                                    it as GenericOutput
-                                            }
-
+                                            (jsonObject.getAsJsonPrimitive("Parameters").asString) as GenericOutput
                                         }
                                         else -> null
                                     }
