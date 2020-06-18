@@ -152,7 +152,7 @@ class AyanApi(
                                         is JsonObject -> {
                                             if (stringParameters)
                                                 Gson().fromJson(
-                                                    (jsonObject.get("Parameters") as JsonObject).get("Params"),
+                                                    (jsonObject.get("Parameters") as JsonObject).get("Params").asString,
                                                     GenericOutput::class.java
                                                 )
                                             else
