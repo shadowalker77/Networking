@@ -85,8 +85,9 @@ class AyanApi(
             endPoint
         val request =
             AyanRequest(finalIdentity, if (stringParameters) Gson().toJson(input) else input)
+        val finalUrl = baseUrl + (forceEndPoint ?: endPoint)
         val wrappedPackage = WrappedPackage<Any, GenericOutput>(
-            baseUrl + (forceEndPoint ?: endPoint),
+            finalUrl,
             request
         )
 
@@ -101,7 +102,7 @@ class AyanApi(
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout).callApi(baseUrl + endPoint, request)
+        aaa(defaultBaseUrl, timeout).callApi(finalUrl, request)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
