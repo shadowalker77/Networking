@@ -1,10 +1,12 @@
 package ir.ayantech.ayannetworking.api
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.ayanModel.*
+import ir.ayantech.ayannetworking.helper.AppSignatureHelper
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
 import ir.ayantech.ayannetworking.networking.RetrofitClient
 import okhttp3.ResponseBody
@@ -21,7 +23,7 @@ typealias ReCallApi = () -> Unit
 typealias GetUserToken = () -> String
 
 class AyanApi(
-    val context: Context?,
+    context: Context?,
     val getUserToken: GetUserToken? = null,
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
@@ -30,6 +32,37 @@ class AyanApi(
     val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
+
+    private var userAgent = ""
+
+    init {
+        userAgent = getFormattedDeviceInfo(context)
+    }
+
+    private fun getFormattedDeviceInfo(context: Context?): String {
+        val sign = try {
+            if (context != null)
+                AppSignatureHelper(context).appSignatures.first()
+            else
+                ""
+        } catch (e: Exception) {
+            ""
+        }
+        val information = listOf(
+            "BuildVersion:(${Build.VERSION.RELEASE})",
+            "Brand:(${Build.BRAND})",
+            "Model:(${Build.MODEL})",
+            "Device:(${Build.DEVICE})",
+            "AppVersion:(${
+                context?.packageManager?.getPackageInfo(
+                    context.packageName,
+                    0
+                )?.versionName
+            })",
+            "Sign:(${sign})"
+        )
+        return information.joinToString(separator = " ")
+    }
 
     @Deprecated("This method has been deprecated. Use the constructor with context passed to it.")
     constructor(
@@ -53,14 +86,12 @@ class AyanApi(
 
     fun aaa(defaultBaseUrl: String, timeout: Long) =
         (apiInterface ?: RetrofitClient.getInstance(
-            context,
+            userAgent,
             defaultBaseUrl,
             timeout
         ).create(ApiInterface::class.java).also {
             apiInterface = it
         })!!
-
-    val wrappedPackages = ArrayList<WrappedPackage<*, *>>()
 
     inline fun <reified GenericOutput> ayanCall(
         ayanCallStatus: AyanCallStatus<GenericOutput>,
@@ -175,7 +206,7 @@ class AyanApi(
                                     }
                                 } catch (e: Exception) {
                                     if (logLevel == LogLevel.LOG_ALL && !e.message.isNullOrEmpty())
-                                        Log.e("Attention", e.message)
+                                        Log.e("Attention", e.message ?: "")
                                 }
                                 val status =
                                     Gson().fromJson(

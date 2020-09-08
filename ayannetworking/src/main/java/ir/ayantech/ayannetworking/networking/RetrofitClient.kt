@@ -11,65 +11,42 @@ import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
-class RetrofitClient private constructor() {
+object RetrofitClient {
 
-    companion object {
+    @Volatile
+    private var retrofit: Retrofit? = null
 
-        @Volatile
-        private var retrofit: Retrofit? = null
+    @Volatile
+    private var okHttpClient: OkHttpClient? = null
 
-        @Volatile
-        private var okHttpClient: OkHttpClient? = null
+    fun getInstance(userAgent: String, defaultBaseUrl: String, timeout: Long = 20): Retrofit =
+        retrofit
+            ?: Retrofit.Builder()
+                .addConverterFactory(GsonConverterFactory.create())
+                .baseUrl(defaultBaseUrl)
+                .client(getOkHttpInstance(userAgent, timeout))
+                .build()
+                .also { retrofit = it }
 
-        fun getInstance(context: Context?, defaultBaseUrl: String, timeout: Long = 20): Retrofit =
-            retrofit
-                ?: Retrofit.Builder()
-                    .addConverterFactory(GsonConverterFactory.create())
-                    .baseUrl(defaultBaseUrl)
-                    .client(getOkHttpInstance(context, timeout))
-                    .build()
-                    .also { retrofit = it }
-
-        private fun getOkHttpInstance(context: Context?, timeout: Long): OkHttpClient {
-            val okHttpClientBuilder = OkHttpClient.Builder()
-            okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
-            okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)
-            okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
-            okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
-            okHttpClientBuilder.proxy(Proxy.NO_PROXY)
-            okHttpClientBuilder.protocols(arrayListOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
-            okHttpClientBuilder.addInterceptor {
-                val userAgentRequest = it.request()
-                    .newBuilder()
-                    .header("User-Agent", getFormattedDeviceInfo(context))
-                    .build()
-                it.proceed(userAgentRequest)
-            }
-            return okHttpClient ?: okHttpClientBuilder.build().also { okHttpClient = it }
+    private fun getOkHttpInstance(userAgent: String, timeout: Long): OkHttpClient {
+        val okHttpClientBuilder = OkHttpClient.Builder()
+        okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
+        okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)
+        okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
+        okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
+        okHttpClientBuilder.proxy(Proxy.NO_PROXY)
+        okHttpClientBuilder.protocols(arrayListOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
+        okHttpClientBuilder.addInterceptor {
+            val userAgentRequest = it.request()
+                .newBuilder()
+                .header("User-Agent", userAgent)
+                .build()
+            it.proceed(userAgentRequest)
         }
+        return okHttpClient ?: okHttpClientBuilder.build().also { okHttpClient = it }
+    }
 
-        fun cancelCalls() {
-            okHttpClient?.dispatcher()?.cancelAll()
-        }
-
-        private fun getFormattedDeviceInfo(context: Context?): String {
-            val sign = try {
-                if (context != null)
-                    AppSignatureHelper(context).appSignatures.first()
-                else
-                    ""
-            } catch (e: Exception) {
-                ""
-            }
-            val information = listOf(
-                "BuildVersion:(${Build.VERSION.RELEASE})",
-                "Brand:(${Build.BRAND})",
-                "Model:(${Build.MODEL})",
-                "Device:(${Build.DEVICE})",
-                "AppVersion:(${context?.packageManager?.getPackageInfo(context.packageName, 0)?.versionName})",
-                "Sign:(${sign})"
-            )
-            return information.joinToString(separator = " ")
-        }
+    fun cancelCalls() {
+        okHttpClient?.dispatcher()?.cancelAll()
     }
 }
