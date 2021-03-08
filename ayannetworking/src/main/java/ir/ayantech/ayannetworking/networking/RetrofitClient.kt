@@ -1,13 +1,10 @@
 package ir.ayantech.ayannetworking.networking
 
-import android.content.Context
-import android.os.Build
-import ir.ayantech.ayannetworking.helper.AppSignatureHelper
+import ir.ayantech.ayannetworking.ayanModel.AyanHeader
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
-import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
@@ -19,16 +16,23 @@ object RetrofitClient {
     @Volatile
     private var okHttpClient: OkHttpClient? = null
 
-    fun getInstance(userAgent: String, defaultBaseUrl: String, timeout: Long = 20): Retrofit =
+    fun getInstance(
+        userAgent: String, defaultBaseUrl: String, timeout: Long = 20,
+        headers: List<AyanHeader>
+    ): Retrofit =
         retrofit
             ?: Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(defaultBaseUrl)
-                .client(getOkHttpInstance(userAgent, timeout))
+                .client(getOkHttpInstance(userAgent, timeout, headers))
                 .build()
                 .also { retrofit = it }
 
-    private fun getOkHttpInstance(userAgent: String, timeout: Long): OkHttpClient {
+    private fun getOkHttpInstance(
+        userAgent: String,
+        timeout: Long,
+        headers: List<AyanHeader>
+    ): OkHttpClient {
         val okHttpClientBuilder = OkHttpClient.Builder()
         okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)
@@ -40,6 +44,11 @@ object RetrofitClient {
             val userAgentRequest = it.request()
                 .newBuilder()
                 .header("User-Agent", userAgent)
+                .also {
+                    headers.forEach { ayanHeader ->
+                        it.addHeader(ayanHeader.key, ayanHeader.value)
+                    }
+                }
                 .build()
             it.proceed(userAgentRequest)
         }

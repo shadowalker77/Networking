@@ -28,6 +28,7 @@ class AyanApi(
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
     val timeout: Long = 30,
+    val headers: List<AyanHeader> = listOf(),
     val stringParameters: Boolean = false,
     val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
@@ -77,6 +78,7 @@ class AyanApi(
         defaultBaseUrl,
         commonCallStatus,
         timeout,
+        listOf(),
         false,
         null,
         logLevel
@@ -84,11 +86,16 @@ class AyanApi(
 
     private var apiInterface: ApiInterface? = null
 
-    fun aaa(defaultBaseUrl: String, timeout: Long) =
+    fun aaa(
+        defaultBaseUrl: String,
+        timeout: Long,
+        headers: List<AyanHeader>
+    ) =
         (apiInterface ?: RetrofitClient.getInstance(
             userAgent,
             defaultBaseUrl,
-            timeout
+            timeout,
+            headers
         ).create(ApiInterface::class.java).also {
             apiInterface = it
         })!!
@@ -135,7 +142,7 @@ class AyanApi(
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout).callApi(finalUrl, request)
+        aaa(defaultBaseUrl, timeout, headers).callApi(finalUrl, request)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
@@ -144,10 +151,10 @@ class AyanApi(
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
-                            aaa(defaultBaseUrl, timeout).callApi(
-                                    wrappedPackage.url,
-                                    wrappedPackage.request
-                                )
+                            aaa(defaultBaseUrl, timeout, headers).callApi(
+                                wrappedPackage.url,
+                                wrappedPackage.request
+                            )
                                 .enqueue(this)
                         }
                         if (response.isSuccessful) {
@@ -183,14 +190,16 @@ class AyanApi(
                                         is JsonObject -> {
                                             if (stringParameters)
                                                 Gson().fromJson(
-                                                    (jsonObject.get("Parameters") as JsonObject).get("Params").asString,
+                                                    (jsonObject.get("Parameters") as JsonObject).get(
+                                                        "Params"
+                                                    ).asString,
                                                     GenericOutput::class.java
                                                 )
                                             else
-                                            Gson().fromJson(
-                                                jsonObject.getAsJsonObject("Parameters"),
-                                                GenericOutput::class.java
-                                            )
+                                                Gson().fromJson(
+                                                    jsonObject.getAsJsonObject("Parameters"),
+                                                    GenericOutput::class.java
+                                                )
                                         }
                                         is JsonArray -> {
                                             Gson().fromJson(
@@ -254,10 +263,10 @@ class AyanApi(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout).callApi(
-                                wrappedPackage.url,
-                                wrappedPackage.request
-                            )
+                        aaa(defaultBaseUrl, timeout, headers).callApi(
+                            wrappedPackage.url,
+                            wrappedPackage.request
+                        )
                             .enqueue(this)
                     }
                     val failure = when {
