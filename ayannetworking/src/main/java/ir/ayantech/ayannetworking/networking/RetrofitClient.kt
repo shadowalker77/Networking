@@ -58,4 +58,9 @@ object RetrofitClient {
     fun cancelCalls() {
         okHttpClient?.dispatcher()?.cancelAll()
     }
+
+    fun clear() {
+        retrofit = null
+        okHttpClient = null
+    }
 }
