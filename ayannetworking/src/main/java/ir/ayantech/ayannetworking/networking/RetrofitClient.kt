@@ -1,6 +1,5 @@
 package ir.ayantech.ayannetworking.networking
 
-import ir.ayantech.ayannetworking.ayanModel.AyanHeader
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import retrofit2.Retrofit
@@ -17,21 +16,19 @@ object RetrofitClient {
     private var okHttpClient: OkHttpClient? = null
 
     fun getInstance(
-        userAgent: String, defaultBaseUrl: String, timeout: Long = 20,
-        headers: List<AyanHeader>
+        userAgent: String, defaultBaseUrl: String, timeout: Long = 20
     ): Retrofit =
         retrofit
             ?: Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(defaultBaseUrl)
-                .client(getOkHttpInstance(userAgent, timeout, headers))
+                .client(getOkHttpInstance(userAgent, timeout))
                 .build()
                 .also { retrofit = it }
 
     private fun getOkHttpInstance(
         userAgent: String,
-        timeout: Long,
-        headers: List<AyanHeader>
+        timeout: Long
     ): OkHttpClient {
         val okHttpClientBuilder = OkHttpClient.Builder()
         okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
@@ -44,11 +41,6 @@ object RetrofitClient {
             val userAgentRequest = it.request()
                 .newBuilder()
                 .header("User-Agent", userAgent)
-                .also {
-                    headers.forEach { ayanHeader ->
-                        it.addHeader(ayanHeader.key, ayanHeader.value)
-                    }
-                }
                 .build()
             it.proceed(userAgentRequest)
         }

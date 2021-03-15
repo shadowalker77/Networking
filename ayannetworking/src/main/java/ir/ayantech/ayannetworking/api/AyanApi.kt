@@ -28,7 +28,7 @@ class AyanApi(
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
     val timeout: Long = 30,
-    val headers: List<AyanHeader> = listOf(),
+    val headers: HashMap<String, String> = HashMap(),
     val stringParameters: Boolean = false,
     val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
@@ -78,7 +78,7 @@ class AyanApi(
         defaultBaseUrl,
         commonCallStatus,
         timeout,
-        listOf(),
+        hashMapOf(),
         false,
         null,
         logLevel
@@ -88,14 +88,12 @@ class AyanApi(
 
     fun aaa(
         defaultBaseUrl: String,
-        timeout: Long,
-        headers: List<AyanHeader>
+        timeout: Long
     ) =
         (apiInterface ?: RetrofitClient.getInstance(
             userAgent,
             defaultBaseUrl,
-            timeout,
-            headers
+            timeout
         ).create(ApiInterface::class.java).also {
             apiInterface = it
         })!!
@@ -142,7 +140,7 @@ class AyanApi(
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout, headers).callApi(finalUrl, request)
+        aaa(defaultBaseUrl, timeout).callApi(finalUrl, request, headers)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
@@ -151,9 +149,10 @@ class AyanApi(
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
-                            aaa(defaultBaseUrl, timeout, headers).callApi(
+                            aaa(defaultBaseUrl, timeout).callApi(
                                 wrappedPackage.url,
-                                wrappedPackage.request
+                                wrappedPackage.request,
+                                headers
                             )
                                 .enqueue(this)
                         }
@@ -263,9 +262,10 @@ class AyanApi(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout, headers).callApi(
+                        aaa(defaultBaseUrl, timeout).callApi(
                             wrappedPackage.url,
-                            wrappedPackage.request
+                            wrappedPackage.request,
+                            headers
                         )
                             .enqueue(this)
                     }
