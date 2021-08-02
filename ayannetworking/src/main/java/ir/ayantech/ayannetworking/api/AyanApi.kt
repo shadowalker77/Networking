@@ -338,6 +338,35 @@ class AyanApi(
             input
         )
     }
+
+    inline fun <reified GenericOutput> call(
+        endPoint: String,
+        input: Any? = null,
+        crossinline callback: AyanApiCallback<GenericOutput>.() -> Unit
+    ) {
+        val temp = AyanApiCallback<GenericOutput>().apply(callback)
+        ayanCall<GenericOutput>(
+            AyanCallStatus {
+                success {
+                    if (temp.useCommonSuccessCallback)
+                        ayanCommonCallingStatus?.dispatchSuccess(it)
+                    temp.successCallback.invoke(it.response?.Parameters)
+                }
+                failure {
+                    if (temp.useCommonFailureCallback)
+                        ayanCommonCallingStatus?.dispatchFail(it)
+                    temp.failureCallback.invoke(it)
+                }
+                changeStatus {
+                    if (temp.useCommonChangeStatusCallback)
+                        ayanCommonCallingStatus?.dispatchChangeStatus(it)
+                    temp.changeStatusCallback.invoke(it)
+                }
+            },
+            endPoint,
+            input
+        )
+    }
 }
 
 class WrappedPackage<GenericInput, GenericOutput>

@@ -14,7 +14,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var ayanApi: AyanApi
     private var ayanCommonCallingStatus = AyanCommonCallStatus {
-        loading { Log.d("AyanLog", "loading") }
+        changeStatus { Log.d("AyanLog", it.name) }
         failure { failure ->
             Log.d("AyanLog", failure.failureMessage)
             retryBtn.setOnClickListener { failure.reCallApi() }
@@ -28,29 +28,29 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         ayanApi = AyanApi(
+            this,
             { "C1901C8ED01143038C13A0B8D29EF3F5" },
             "https://mytehranapp.tehran.ir/WebServices/Core.svc/",
             ayanCommonCallingStatus
         )
 
-//        wrappedPackage = ayanApi.ayanCall(
-//            AyanCallStatus {
-//                success {
-//                    Log.d("AyanLog", it.response.toString())
-//                    val retry = it.reCallApi
-//                    retryBtn.setOnClickListener { retry() }
-//                }
-//            },
-//            "GetEndUserInquiryHistoryDetail",
-//            GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
-//        )
-//        RetrofitClient.cancelCalls()
-
-        ayanApi.simpleCall<String>(
-            "LastBillingDate"
-//            , GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
+        /*ayanApi.simpleCall<String>(
+            "LastBillingDate", GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
         ) {
             Log.d("SimpleCall", it.toString())
+        }*/
+
+        ayanApi.call<GetEndUserInquiryHistoryDetailOutputModel>(
+            "LastBillingDate",
+            GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
+        ) {
+            useCommonChangeStatusCallback = false
+            success {
+                Log.d("AyanLog", it.toString())
+            }
+            failure {
+                Log.d("AyanLog", it.failureMessage)
+            }
         }
     }
 }
