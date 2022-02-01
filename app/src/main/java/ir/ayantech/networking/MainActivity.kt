@@ -40,6 +40,15 @@ class MainActivity : AppCompatActivity() {
             Log.d("SimpleCall", it.toString())
         }*/
 
+        ayanApi.checkTokenValidation = {
+            false
+        }
+
+        ayanApi.refreshToken = { oldToken, newTokenReady ->
+            ayanApi.getUserToken = { "newToken" }
+            newTokenReady()
+        }
+
         ayanApi.call<GetEndUserInquiryHistoryDetailOutputModel>(
             "LastBillingDate",
             GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")

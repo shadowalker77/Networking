@@ -24,7 +24,7 @@ typealias GetUserToken = () -> String
 
 class AyanApi(
     context: Context?,
-    val getUserToken: GetUserToken? = null,
+    var getUserToken: GetUserToken? = null,
     val defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
     val timeout: Long = 30,
@@ -33,6 +33,9 @@ class AyanApi(
     val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
+
+    var checkTokenValidation: ((String?) -> Boolean) = { true }
+    var refreshToken: ((oldToken: String?, newTokenReady: (() -> Unit)) -> Unit)? = null
 
     private var userAgent = ""
 
@@ -65,25 +68,6 @@ class AyanApi(
         return information.joinToString(separator = " ")
     }
 
-    @Deprecated("This method has been deprecated. Use the constructor with context passed to it.")
-    constructor(
-        getUserToken: GetUserToken? = null,
-        defaultBaseUrl: String = "",
-        commonCallStatus: AyanCommonCallStatus? = null,
-        timeout: Long = 30,
-        logLevel: LogLevel = LogLevel.LOG_ALL
-    ) : this(
-        null,
-        getUserToken,
-        defaultBaseUrl,
-        commonCallStatus,
-        timeout,
-        hashMapOf(),
-        false,
-        null,
-        logLevel
-    )
-
     private var apiInterface: ApiInterface? = null
 
     fun aaa(
@@ -106,6 +90,41 @@ class AyanApi(
         hasIdentity: Boolean = true,
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
+    ): WrappedPackage<*, GenericOutput>? {
+        return if (checkTokenValidation(getUserToken?.invoke())) {
+            oldAyanCall(
+                ayanCallStatus,
+                endPoint,
+                input,
+                identity,
+                hasIdentity,
+                commonCallStatus,
+                baseUrl
+            )
+        } else {
+            refreshToken?.invoke(getUserToken?.invoke()) {
+                oldAyanCall(
+                    ayanCallStatus,
+                    endPoint,
+                    input,
+                    identity,
+                    hasIdentity,
+                    commonCallStatus,
+                    baseUrl
+                )
+            }
+            null
+        }
+    }
+
+    inline fun <reified GenericOutput> oldAyanCall(
+        ayanCallStatus: AyanCallStatus<GenericOutput>,
+        endPoint: String,
+        input: Any? = null,
+        identity: Any? = null,
+        hasIdentity: Boolean = true,
+        commonCallStatus: AyanCommonCallStatus? = null,
+        baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
         if (commonCallStatus != null)
             ayanCallStatus.ayanCommonCallingStatus = commonCallStatus
@@ -113,7 +132,7 @@ class AyanApi(
             ayanCallStatus.ayanCommonCallingStatus = this.commonCallStatus
 
         var finalIdentity: Any? = null
-        if (hasIdentity && getUserToken != null) finalIdentity = Identity(getUserToken.invoke())
+        if (hasIdentity && getUserToken != null) finalIdentity = Identity(getUserToken?.invoke())
         if (identity != null) finalIdentity = identity
         val request =
             AyanRequest(
