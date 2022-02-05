@@ -25,10 +25,10 @@ typealias GetUserToken = () -> String
 class AyanApi(
     context: Context?,
     var getUserToken: GetUserToken? = null,
-    val defaultBaseUrl: String = "",
+    var defaultBaseUrl: String = "",
     var commonCallStatus: AyanCommonCallStatus? = null,
-    val timeout: Long = 30,
-    val headers: HashMap<String, String> = HashMap(),
+    var timeout: Long = 30,
+    var headers: HashMap<String, String> = HashMap(),
     val stringParameters: Boolean = false,
     val forceEndPoint: String? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
@@ -91,7 +91,7 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput>? {
-        return if (checkTokenValidation(getUserToken?.invoke())) {
+        return if (checkTokenValidation(getUserToken?.invoke()) || !hasIdentity) {
             oldAyanCall(
                 ayanCallStatus,
                 endPoint,
