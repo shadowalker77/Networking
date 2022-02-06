@@ -95,6 +95,7 @@ class AyanApi(
         return if (checkTokenValidation(getUserToken?.invoke())
             || !checkTokenValidation
             || refreshToken == null
+            || getUserToken?.invoke().isNullOrEmpty()
         ) {
             oldAyanCall(
                 ayanCallStatus,
