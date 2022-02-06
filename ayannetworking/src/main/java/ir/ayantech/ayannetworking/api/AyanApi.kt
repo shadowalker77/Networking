@@ -92,7 +92,10 @@ class AyanApi(
         baseUrl: String = defaultBaseUrl,
         checkTokenValidation: Boolean = true
     ): WrappedPackage<*, GenericOutput>? {
-        return if (checkTokenValidation(getUserToken?.invoke()) && checkTokenValidation) {
+        return if (checkTokenValidation(getUserToken?.invoke())
+            && checkTokenValidation
+            && refreshToken != null
+        ) {
             oldAyanCall(
                 ayanCallStatus,
                 endPoint,
