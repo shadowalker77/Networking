@@ -89,9 +89,10 @@ class AyanApi(
         identity: Any? = null,
         hasIdentity: Boolean = true,
         commonCallStatus: AyanCommonCallStatus? = null,
-        baseUrl: String = defaultBaseUrl
+        baseUrl: String = defaultBaseUrl,
+        checkTokenValidation: Boolean = true
     ): WrappedPackage<*, GenericOutput>? {
-        return if (checkTokenValidation(getUserToken?.invoke()) || !hasIdentity) {
+        return if (checkTokenValidation(getUserToken?.invoke()) && checkTokenValidation) {
             oldAyanCall(
                 ayanCallStatus,
                 endPoint,
