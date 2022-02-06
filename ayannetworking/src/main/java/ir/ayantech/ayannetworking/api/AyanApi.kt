@@ -93,8 +93,8 @@ class AyanApi(
         checkTokenValidation: Boolean = true
     ): WrappedPackage<*, GenericOutput>? {
         return if (checkTokenValidation(getUserToken?.invoke())
-            && checkTokenValidation
-            && refreshToken != null
+            || !checkTokenValidation
+            || refreshToken == null
         ) {
             oldAyanCall(
                 ayanCallStatus,
@@ -298,31 +298,31 @@ class AyanApi(
                             FailureType.NO_INTERNET_CONNECTION,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
+                        )
                         t is TimeoutException -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
+                        )
                         t is SocketTimeoutException -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
+                        )
                         (t is InterruptedIOException && t.message == "timeout") -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
+                        )
                         (t is IOException && t.message == "Canceled") -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.CANCELED,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
+                        )
 //                    is SocketException -> {
 //                        canTry = false
 //                        message = ""
@@ -338,8 +338,8 @@ class AyanApi(
                             FailureType.NO_INTERNET_CONNECTION,
                             Failure.APP_INTERNAL_ERROR_CODE,
                             wrappedPackage.reCallApi
-                        ).also { wrappedPackage.failure = it }
-                    }
+                        )
+                    }.also { wrappedPackage.failure = it }
                     ayanCallStatus.dispatchFail(failure)
                 }
             })
