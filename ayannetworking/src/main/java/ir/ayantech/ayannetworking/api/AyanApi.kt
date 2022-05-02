@@ -131,6 +131,16 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
+        var language = Language.PERSIAN
+
+        if (this.headers.containsKey("Accept-Language")) {
+            language = when(this.headers["Accept-Language"]) {
+                "en" -> Language.ENGLISH
+                "ar" -> Language.ARABIC
+                else -> Language.PERSIAN
+            }
+        }
+
         if (commonCallStatus != null)
             ayanCallStatus.ayanCommonCallingStatus = commonCallStatus
         else if (this.commonCallStatus != null)
@@ -186,7 +196,8 @@ class AyanApi(
                                     FailureRepository.REMOTE,
                                     FailureType.UNKNOWN,
                                     Failure.NO_CODE_SERVER_ERROR_CODE,
-                                    wrappedPackage.reCallApi
+                                    wrappedPackage.reCallApi,
+                                    language
                                 ).also { wrappedPackage.failure = it }
                                 ayanCallStatus.dispatchFail(failure)
                             } else {
@@ -252,7 +263,8 @@ class AyanApi(
                                         Failure(
                                             FailureRepository.REMOTE,
                                             FailureType.LOGIN_REQUIRED, "G00002",
-                                            wrappedPackage.reCallApi
+                                            wrappedPackage.reCallApi,
+                                            language
                                         ).also { wrappedPackage.failure = it }
                                     )
                                     else -> ayanCallStatus.dispatchFail(
@@ -261,6 +273,7 @@ class AyanApi(
                                             FailureType.UNKNOWN,
                                             wrappedPackage.response!!.Status.Code,
                                             wrappedPackage.reCallApi,
+                                            language,
                                             wrappedPackage.response!!.Status.Description
                                         ).also { wrappedPackage.failure = it }
                                     )
@@ -274,7 +287,8 @@ class AyanApi(
                                 FailureRepository.REMOTE,
                                 FailureType.NOT_200,
                                 Failure.APP_INTERNAL_ERROR_CODE,
-                                wrappedPackage.reCallApi
+                                wrappedPackage.reCallApi,
+                                language
                             ).also { wrappedPackage.failure = it }
                             ayanCallStatus.dispatchFail(failure)
                         }
@@ -298,31 +312,36 @@ class AyanApi(
                             FailureRepository.LOCAL,
                             FailureType.NO_INTERNET_CONNECTION,
                             Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
+                            wrappedPackage.reCallApi,
+                            language
                         )
                         t is TimeoutException -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
+                            wrappedPackage.reCallApi,
+                            language
                         )
                         t is SocketTimeoutException -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
+                            wrappedPackage.reCallApi,
+                            language
                         )
                         (t is InterruptedIOException && t.message == "timeout") -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.TIMEOUT,
                             Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
+                            wrappedPackage.reCallApi,
+                            language
                         )
                         (t is IOException && t.message == "Canceled") -> Failure(
                             FailureRepository.LOCAL,
                             FailureType.CANCELED,
                             Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
+                            wrappedPackage.reCallApi,
+                            language
                         )
 //                    is SocketException -> {
 //                        canTry = false
@@ -338,7 +357,8 @@ class AyanApi(
                             FailureRepository.LOCAL,
                             FailureType.NO_INTERNET_CONNECTION,
                             Failure.APP_INTERNAL_ERROR_CODE,
-                            wrappedPackage.reCallApi
+                            wrappedPackage.reCallApi,
+                            language
                         )
                     }.also { wrappedPackage.failure = it }
                     ayanCallStatus.dispatchFail(failure)
