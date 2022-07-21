@@ -1,13 +1,11 @@
 package ir.ayantech.networking
 
 import android.os.Bundle
-import androidx.appcompat.app.AppCompatActivity
 import android.util.Log
+import androidx.appcompat.app.AppCompatActivity
 import ir.ayantech.ayannetworking.api.AyanApi
-import ir.ayantech.ayannetworking.api.AyanCallStatus
 import ir.ayantech.ayannetworking.api.AyanCommonCallStatus
 import ir.ayantech.ayannetworking.api.WrappedPackage
-import ir.ayantech.ayannetworking.networking.RetrofitClient
 import kotlinx.android.synthetic.main.activity_main.*
 
 class MainActivity : AppCompatActivity() {
@@ -30,7 +28,7 @@ class MainActivity : AppCompatActivity() {
         ayanApi = AyanApi(
             this,
             { "C1901C8ED01143038C13A0B8D29EF3F5" },
-            "https://mytehranapp.tehran.ir/WebServices/Core.svc/",
+            "https://application.billingsystem.ayantech.ir/WebServices/Core.svc/",
             ayanCommonCallingStatus
         )
 
@@ -40,17 +38,8 @@ class MainActivity : AppCompatActivity() {
             Log.d("SimpleCall", it.toString())
         }*/
 
-        ayanApi.checkTokenValidation = {
-            false
-        }
-
-        ayanApi.refreshToken = { oldToken, newTokenReady ->
-            ayanApi.getUserToken = { "newToken" }
-            newTokenReady()
-        }
-
         ayanApi.call<GetEndUserInquiryHistoryDetailOutputModel>(
-            "LastBillingDate",
+            "GetEndUserInquiryHistoryDetail",
             GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
         ) {
             useCommonChangeStatusCallback = false

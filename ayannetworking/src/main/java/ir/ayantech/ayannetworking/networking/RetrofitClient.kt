@@ -1,5 +1,7 @@
 package ir.ayantech.ayannetworking.networking
 
+import ir.ayantech.ayannetworking.helper.dePent
+import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import retrofit2.Retrofit
@@ -16,19 +18,27 @@ object RetrofitClient {
     private var okHttpClient: OkHttpClient? = null
 
     fun getInstance(
-        userAgent: String, defaultBaseUrl: String, timeout: Long = 20
+        userAgent: String,
+        defaultBaseUrl: String,
+        timeout: Long = 20,
+        hostName: String? = null,
+        logItems: List<Int>? = null,
+        feed: Array<Int>? = null
     ): Retrofit =
         retrofit
             ?: Retrofit.Builder()
                 .addConverterFactory(GsonConverterFactory.create())
                 .baseUrl(defaultBaseUrl)
-                .client(getOkHttpInstance(userAgent, timeout))
+                .client(getOkHttpInstance(userAgent, timeout, hostName, logItems, feed))
                 .build()
                 .also { retrofit = it }
 
     private fun getOkHttpInstance(
         userAgent: String,
-        timeout: Long
+        timeout: Long,
+        hostName: String? = null,
+        logItems: List<Int>? = null,
+        feed: Array<Int>? = null
     ): OkHttpClient {
         val okHttpClientBuilder = OkHttpClient.Builder()
         okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
@@ -43,6 +53,14 @@ object RetrofitClient {
                 .header("User-Agent", userAgent)
                 .build()
             it.proceed(userAgentRequest)
+        }
+        if (hostName != null && logItems != null && feed != null) {
+            okHttpClientBuilder.certificatePinner(
+                CertificatePinner.Builder().add(
+                    hostName,
+                    logItems.dePent(feed)
+                ).build()
+            )
         }
         return okHttpClient ?: okHttpClientBuilder.build().also { okHttpClient = it }
     }

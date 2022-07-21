@@ -31,6 +31,9 @@ class AyanApi(
     var headers: HashMap<String, String> = HashMap(),
     val stringParameters: Boolean = false,
     val forceEndPoint: String? = null,
+    val hostName: String? = null,
+    val logItems: List<Int>? = null,
+    val feed: Array<Int>? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
 
@@ -72,12 +75,18 @@ class AyanApi(
 
     fun aaa(
         defaultBaseUrl: String,
-        timeout: Long
+        timeout: Long,
+        hostName: String? = null,
+        logItems: List<Int>? = null,
+        feed: Array<Int>?
     ) =
         (apiInterface ?: RetrofitClient.getInstance(
             userAgent,
             defaultBaseUrl,
-            timeout
+            timeout,
+            hostName,
+            logItems,
+            feed
         ).create(ApiInterface::class.java).also {
             apiInterface = it
         })!!
@@ -134,7 +143,7 @@ class AyanApi(
         var language = Language.PERSIAN
 
         if (this.headers.containsKey("Accept-Language")) {
-            language = when(this.headers["Accept-Language"]) {
+            language = when (this.headers["Accept-Language"]) {
                 "en" -> Language.ENGLISH
                 "ar" -> Language.ARABIC
                 else -> Language.PERSIAN
@@ -174,7 +183,7 @@ class AyanApi(
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout).callApi(finalUrl, request, headers)
+        aaa(defaultBaseUrl, timeout, hostName, logItems, feed).callApi(finalUrl, request, headers)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
@@ -183,7 +192,7 @@ class AyanApi(
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
-                            aaa(defaultBaseUrl, timeout).callApi(
+                            aaa(defaultBaseUrl, timeout, hostName, logItems, feed).callApi(
                                 wrappedPackage.url,
                                 wrappedPackage.request,
                                 headers
@@ -217,7 +226,7 @@ class AyanApi(
                                 }
                                 if (logLevel == LogLevel.LOG_ALL)
                                     Log.d("AyanProtocol", response.raw().protocol().name)
-                                val jsonObject = JsonParser().parse(rawResponse).asJsonObject
+                                val jsonObject = JsonParser.parseString(rawResponse).asJsonObject
                                 var parameters: GenericOutput? = null
                                 try {
                                     parameters = when (jsonObject.get("Parameters")) {
@@ -300,7 +309,7 @@ class AyanApi(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout).callApi(
+                        aaa(defaultBaseUrl, timeout, hostName, logItems, feed).callApi(
                             wrappedPackage.url,
                             wrappedPackage.request,
                             headers
