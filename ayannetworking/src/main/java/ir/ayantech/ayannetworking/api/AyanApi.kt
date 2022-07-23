@@ -143,7 +143,7 @@ class AyanApi(
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
 
-        if (feed?.toList()?.dePent(null) != sign) {
+        if (feed?.toList()?.dePent(null) != sign && feed != null) {
             throw Exception("No configuration found.")
         }
 
