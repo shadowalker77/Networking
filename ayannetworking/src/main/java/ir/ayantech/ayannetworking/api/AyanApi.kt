@@ -7,6 +7,7 @@ import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.ayanModel.*
 import ir.ayantech.ayannetworking.helper.AppSignatureHelper
+import ir.ayantech.ayannetworking.helper.dePent
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
 import ir.ayantech.ayannetworking.networking.RetrofitClient
 import okhttp3.ResponseBody
@@ -37,6 +38,7 @@ class AyanApi(
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
 
+    var sign: String? = null
     var checkTokenValidation: ((String?) -> Boolean) = { true }
     var refreshToken: ((oldToken: String?, newTokenReady: (() -> Unit)) -> Unit)? = null
 
@@ -47,7 +49,7 @@ class AyanApi(
     }
 
     private fun getFormattedDeviceInfo(context: Context?): String {
-        val sign = try {
+        sign = try {
             if (context != null)
                 AppSignatureHelper(context).appSignatures.first()
             else
@@ -140,6 +142,11 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
+
+        if (feed?.toList()?.dePent(null) != sign) {
+            throw Exception("No configuration found.")
+        }
+
         var language = Language.PERSIAN
 
         if (this.headers.containsKey("Accept-Language")) {
