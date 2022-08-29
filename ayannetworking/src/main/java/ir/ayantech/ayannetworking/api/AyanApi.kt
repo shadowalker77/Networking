@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.ayanModel.*
 import ir.ayantech.ayannetworking.helper.AppSignatureHelper
 import ir.ayantech.ayannetworking.helper.dePent
+import ir.ayantech.ayannetworking.helper.getTypeOf
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
 import ir.ayantech.ayannetworking.networking.RetrofitClient
 import okhttp3.ResponseBody
@@ -16,6 +17,7 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
 import java.io.InterruptedIOException
+import java.lang.reflect.Type
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
@@ -133,7 +135,8 @@ class AyanApi(
         }
     }
 
-    inline fun <reified GenericOutput> oldAyanCall(
+    fun <GenericOutput> callSite(
+        typeToken: TypeToken<GenericOutput>,
         ayanCallStatus: AyanCallStatus<GenericOutput>,
         endPoint: String,
         input: Any? = null,
@@ -142,7 +145,6 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
-
         if (feed?.toList()?.dePent(null) != sign && feed != null) {
             throw Exception("No configuration found.")
         }
@@ -243,19 +245,19 @@ class AyanApi(
                                                     (jsonObject.get("Parameters") as JsonObject).get(
                                                         "Params"
                                                     ).asString,
-                                                    GenericOutput::class.java
+                                                    typeToken.type
                                                 )
-                                            else
+                                            else {
                                                 Gson().fromJson(
                                                     jsonObject.getAsJsonObject("Parameters"),
-                                                    GenericOutput::class.java
+                                                    typeToken.type
                                                 )
+                                            }
                                         }
                                         is JsonArray -> {
                                             Gson().fromJson(
                                                 jsonObject.getAsJsonArray("Parameters"),
-                                                object : TypeToken<GenericOutput>() {
-                                                }.type
+                                                typeToken.type
                                             )
                                         }
                                         is JsonPrimitive -> {
@@ -382,6 +384,25 @@ class AyanApi(
             })
         return wrappedPackage
     }
+
+    inline fun <reified GenericOutput> oldAyanCall(
+        ayanCallStatus: AyanCallStatus<GenericOutput>,
+        endPoint: String,
+        input: Any? = null,
+        identity: Any? = null,
+        hasIdentity: Boolean = true,
+        commonCallStatus: AyanCommonCallStatus? = null,
+        baseUrl: String = defaultBaseUrl
+    ): WrappedPackage<*, GenericOutput> = callSite(
+        getTypeOf(),
+        ayanCallStatus,
+        endPoint,
+        input,
+        identity,
+        hasIdentity,
+        commonCallStatus,
+        baseUrl
+    )
 
     inline fun <reified GenericOutput> simpleCall(
         endPoint: String,

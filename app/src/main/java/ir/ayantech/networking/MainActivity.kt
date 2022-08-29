@@ -3,6 +3,7 @@ package ir.ayantech.networking
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import ir.ayantech.ayannetworking.api.ApiCache
 import ir.ayantech.ayannetworking.api.AyanApi
 import ir.ayantech.ayannetworking.api.AyanCommonCallStatus
 import ir.ayantech.ayannetworking.api.WrappedPackage
@@ -27,7 +28,7 @@ class MainActivity : AppCompatActivity() {
 
         ayanApi = AyanApi(
             this,
-            { "C1901C8ED01143038C13A0B8D29EF3F5" },
+            { "FBA3A180FE94425BB11D4FA1D5466527" },
             "https://application.billingsystem.ayantech.ir/WebServices/Core.svc/",
             ayanCommonCallingStatus
         )
@@ -38,17 +39,27 @@ class MainActivity : AppCompatActivity() {
             Log.d("SimpleCall", it.toString())
         }*/
 
-        ayanApi.call<GetEndUserInquiryHistoryDetailOutputModel>(
-            "GetEndUserInquiryHistoryDetail",
-            GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
-        ) {
-            useCommonChangeStatusCallback = false
-            success {
-                Log.d("AyanLog", it.toString())
-            }
-            failure {
-                Log.d("AyanLog", it.failureMessage)
-            }
+//        ayanApi.call<GetEndUserInquiryHistoryDetailOutputModel>(
+//            "GetEndUserInquiryHistoryDetail",
+//            GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry")
+//        ) {
+//            useCommonChangeStatusCallback = false
+//            success {
+//                Log.d("AyanLog", it.toString())
+//            }
+//            failure {
+//                Log.d("AyanLog", it.failureMessage)
+//            }
+//        }
+
+        val ggg =
+            ApiCache.create<GetEndUserInquiryHistoryDetailOutputModel>(
+                ayanApi,
+                "GetEndUserInquiryHistoryDetail"
+            ).also { it.input = GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry") }
+
+        ggg.getApiResult {
+            Log.d("AyanLog", it.toString())
         }
     }
 }
