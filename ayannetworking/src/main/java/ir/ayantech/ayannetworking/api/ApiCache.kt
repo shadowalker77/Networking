@@ -40,7 +40,10 @@ class ApiCache<T>(
                     success {
                         it.response?.Parameters?.let { resp ->
                             callbacks?.forEach {
-                                (it as OutputCallBack<T>).invoke(resp)
+                                try {
+                                    (it as OutputCallBack<T>).invoke(resp)
+                                } catch (e: Exception) {
+                                }
                             }
                             callbacks?.clear()
                         }
