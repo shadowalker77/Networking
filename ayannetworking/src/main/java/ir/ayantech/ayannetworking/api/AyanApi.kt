@@ -17,7 +17,6 @@ import retrofit2.Callback
 import retrofit2.Response
 import java.io.IOException
 import java.io.InterruptedIOException
-import java.lang.reflect.Type
 import java.net.SocketTimeoutException
 import java.net.UnknownHostException
 import java.util.concurrent.TimeoutException
@@ -43,6 +42,8 @@ class AyanApi(
     var sign: String? = null
     var checkTokenValidation: ((String?) -> Boolean) = { true }
     var refreshToken: ((oldToken: String?, newTokenReady: (() -> Unit)) -> Unit)? = null
+
+    var successHint: ((String) -> Unit)? = null
 
     private var userAgent = ""
 
@@ -276,7 +277,14 @@ class AyanApi(
                                     )
                                 wrappedPackage.response = AyanResponse(parameters, status)
                                 when (wrappedPackage.response!!.Status.Code) {
-                                    "G00000" -> ayanCallStatus.dispatchSuccess(wrappedPackage)
+                                    "G00000" -> {
+                                        ayanCallStatus.dispatchSuccess(wrappedPackage)
+                                        wrappedPackage.response?.Status?.Hint?.let {
+                                            successHint?.invoke(
+                                                it
+                                            )
+                                        }
+                                    }
                                     "G00002" -> ayanCallStatus.dispatchFail(
                                         Failure(
                                             FailureRepository.REMOTE,
@@ -289,10 +297,10 @@ class AyanApi(
                                         Failure(
                                             FailureRepository.REMOTE,
                                             FailureType.UNKNOWN,
-                                            wrappedPackage.response!!.Status.Code,
+                                            wrappedPackage.response?.Status?.Code ?: "",
                                             wrappedPackage.reCallApi,
                                             language,
-                                            wrappedPackage.response!!.Status.Description
+                                            wrappedPackage.response?.Status?.Description ?: ""
                                         ).also { wrappedPackage.failure = it }
                                     )
                                 }

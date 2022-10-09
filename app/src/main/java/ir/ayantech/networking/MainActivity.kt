@@ -20,7 +20,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private var wrappedPackage: WrappedPackage<*, GetEndUserInquiryHistoryDetailOutputModel>? = null
+    private var wrappedPackage: WrappedPackage<*, GetEndUserInquiryHistoryDetail.Output>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -53,29 +53,13 @@ class MainActivity : AppCompatActivity() {
 //        }
 
         val ggg =
-            ApiCache.create<GetEndUserInquiryHistoryDetailOutputModel>(
+            ApiCache.create<GetEndUserInquiryHistoryDetail.Output>(
                 ayanApi,
                 "GetEndUserInquiryHistoryDetail"
-            ).also { it.input = GetEndUserInquiryHistoryDetailInputModel("WaterBillInquiry") }
+            ).also { it.input = GetEndUserInquiryHistoryDetail.Input("WaterBillInquiry") }
 
         ggg.getApiResult {
             Log.d("AyanLog", it.toString())
         }
     }
 }
-
-data class GetEndUserInquiryHistoryDetailInputModel(val InquiryType: String)
-
-data class GetEndUserInquiryHistoryDetailOutputModel(
-    val InquiryHistory: ArrayList<InquiryModel>,
-    val TotalInquiryHistoryCount: Long
-)
-
-data class InquiryModel(
-    val Description: String,
-    val IsFavorite: Boolean,
-    val IsElectronic: Boolean,
-    val ID: Long,
-    val Type: String,
-    val Value: String
-)
