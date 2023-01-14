@@ -26,6 +26,7 @@ class Failure(
     val failureCode: String,
     val reCallApi: ReCallApi,
     val language: Language,
+    val failureStatus: Status?,
     val failureMessage: String = getErrorMessage(failureType, language)
 ) {
 
