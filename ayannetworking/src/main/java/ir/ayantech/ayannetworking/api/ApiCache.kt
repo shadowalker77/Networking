@@ -3,8 +3,6 @@ package ir.ayantech.ayannetworking.api
 import com.google.gson.reflect.TypeToken
 import ir.ayantech.ayannetworking.helper.getTypeOf
 
-typealias OutputCallBack<Output> = (Output) -> Unit
-
 class ApiCache<T>(
     var ayanApi: AyanApi,
     val endPoint: String,
@@ -20,40 +18,74 @@ class ApiCache<T>(
 
     var calledOnce = false
     var output: WrappedPackage<*, T>? = null
-    var callbacks: ArrayList<OutputCallBack<*>>? = null
+
+    var callBacks: ArrayList<AyanApiCallback<T>>? = null
 
     fun getApiResult(
         ayanApi: AyanApi = this.ayanApi,
-        callback: OutputCallBack<T>
+        callback: (T) -> Unit
     ) {
+        getFullApiResult(ayanApi) {
+            useCommonChangeStatusCallback = false
+            success {
+                it?.let { it1 -> callback(it1) }
+            }
+            changeStatusCallback {
+                if (it == CallingState.LOADING) calledOnce = true
+            }
+        }
+    }
+
+    fun getFullApiResult(
+        ayanApi: AyanApi = this.ayanApi,
+        callback: AyanApiCallback<T>.() -> Unit
+    ) {
+        val temp = AyanApiCallback<T>().apply(callback)
         if (output?.response?.Parameters != null) {
-            callback(output?.response?.Parameters!! as T)
+            temp.successCallback(output?.response?.Parameters!! as T)
             return
         }
-        (callbacks
-            ?: arrayListOf<OutputCallBack<*>>().also { callbacks = it }).add(callback)
+        (callBacks
+            ?: arrayListOf<AyanApiCallback<T>>().also { callBacks = it }).add(temp)
         if (!calledOnce) {
             calledOnce = true
             output = ayanApi.callSite(
                 typeToken,
                 AyanCallStatus {
                     success {
+                        if (temp.useCommonSuccessCallback)
+                            ayanCommonCallingStatus?.dispatchSuccess(it)
                         it.response?.Parameters?.let { resp ->
-                            callbacks?.forEach {
+                            callBacks?.forEach {
                                 try {
-                                    (it as OutputCallBack<T>).invoke(resp)
+                                    it.successCallback.invoke(resp)
                                 } catch (e: Exception) {
                                 }
                             }
-                            callbacks?.clear()
+                            callBacks?.clear()
                         }
                     }
-                    changeStatus {
-                        if (it == CallingState.LOADING) calledOnce = true
-                    }
-                    failure {
-                        ayanApi.commonCallStatus?.dispatchFail(it)
+                    failure { failure ->
+                        if (temp.useCommonFailureCallback && calledOnce)
+                            ayanCommonCallingStatus?.dispatchFail(failure)
+                        callBacks?.forEach {
+                            try {
+                                temp.failureCallback.invoke(failure)
+                            } catch (e: Exception) {
+                            }
+                        }
                         calledOnce = false
+                    }
+                    changeStatus { cs ->
+                        if (temp.useCommonChangeStatusCallback)
+                            ayanCommonCallingStatus?.dispatchChangeStatus(cs)
+                        if (cs == CallingState.LOADING) calledOnce = true
+                        callBacks?.forEach {
+                            try {
+                                temp.changeStatusCallback.invoke(cs)
+                            } catch (e: Exception) {
+                            }
+                        }
                     }
                 },
                 input = input,
@@ -63,7 +95,7 @@ class ApiCache<T>(
     }
 
     fun clear() {
-        callbacks = null
+        callBacks = null
         calledOnce = false
         output = null
     }

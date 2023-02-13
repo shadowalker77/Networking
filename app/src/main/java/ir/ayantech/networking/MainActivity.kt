@@ -58,8 +58,10 @@ class MainActivity : AppCompatActivity() {
                 "GetEndUserInquiryHistoryDetail"
             ).also { it.input = GetEndUserInquiryHistoryDetail.Input("WaterBillInquiry") }
 
-        ggg.getApiResult {
-            Log.d("AyanLog", it.toString())
+        ggg.getFullApiResult {
+            success {
+                Log.d("AyanLog", it.toString())
+            }
         }
     }
 }
