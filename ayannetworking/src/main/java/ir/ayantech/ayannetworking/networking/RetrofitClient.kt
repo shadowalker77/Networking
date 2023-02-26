@@ -1,5 +1,6 @@
 package ir.ayantech.ayannetworking.networking
 
+import com.google.gson.Gson
 import ir.ayantech.ayannetworking.helper.dePent
 import okhttp3.CertificatePinner
 import okhttp3.OkHttpClient
@@ -23,11 +24,15 @@ object RetrofitClient {
         timeout: Long = 20,
         hostName: String? = null,
         logItems: List<Int>? = null,
-        feed: Array<Int>? = null
+        feed: Array<Int>? = null,
+        gson: Gson?
     ): Retrofit =
         retrofit
             ?: Retrofit.Builder()
-                .addConverterFactory(GsonConverterFactory.create())
+                .addConverterFactory(
+                    if (gson == null) GsonConverterFactory.create()
+                    else GsonConverterFactory.create(gson)
+                )
                 .baseUrl(defaultBaseUrl)
                 .client(getOkHttpInstance(userAgent, timeout, hostName, logItems, feed))
                 .build()

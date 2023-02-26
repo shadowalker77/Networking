@@ -36,6 +36,7 @@ class AyanApi(
     val hostName: String? = null,
     val logItems: List<Int>? = null,
     val feed: Array<Int>? = null,
+    val gson: Gson? = null,
     val logLevel: LogLevel = LogLevel.LOG_ALL
 ) {
 
@@ -83,7 +84,8 @@ class AyanApi(
         timeout: Long,
         hostName: String? = null,
         logItems: List<Int>? = null,
-        feed: Array<Int>?
+        feed: Array<Int>?,
+        gson: Gson?
     ) =
         (apiInterface ?: RetrofitClient.getInstance(
             userAgent,
@@ -91,7 +93,8 @@ class AyanApi(
             timeout,
             hostName,
             logItems,
-            feed
+            feed,
+            gson
         ).create(ApiInterface::class.java).also {
             apiInterface = it
         })!!
@@ -193,7 +196,11 @@ class AyanApi(
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout, hostName, logItems, feed).callApi(finalUrl, request, headers)
+        aaa(defaultBaseUrl, timeout, hostName, logItems, feed, gson).callApi(
+            finalUrl,
+            request,
+            headers
+        )
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
@@ -202,7 +209,7 @@ class AyanApi(
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
-                            aaa(defaultBaseUrl, timeout, hostName, logItems, feed).callApi(
+                            aaa(defaultBaseUrl, timeout, hostName, logItems, feed, gson).callApi(
                                 wrappedPackage.url,
                                 wrappedPackage.request,
                                 headers
@@ -330,7 +337,7 @@ class AyanApi(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout, hostName, logItems, feed).callApi(
+                        aaa(defaultBaseUrl, timeout, hostName, logItems, feed, gson).callApi(
                             wrappedPackage.url,
                             wrappedPackage.request,
                             headers
