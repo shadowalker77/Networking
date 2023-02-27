@@ -174,7 +174,7 @@ class AyanApi(
         val request =
             AyanRequest(
                 finalIdentity, if (stringParameters) {
-                    EscapedParameters(Gson().toJson(input), endPoint)
+                    EscapedParameters((gson ?: Gson()).toJson(input), endPoint)
                 } else {
                     input
                 }
@@ -189,9 +189,9 @@ class AyanApi(
         try {
             if (logLevel == LogLevel.LOG_ALL) {
                 try {
-                    Log.d("AyanReq", endPoint + ":\n" + Gson().toJson(request).toPrettyFormat())
+                    Log.d("AyanReq", endPoint + ":\n" + (gson ?: Gson()).toJson(request).toPrettyFormat())
                 } catch (e: Exception) {
-                    Log.d("AyanReq", endPoint + ":\n" + Gson().toJson(request))
+                    Log.d("AyanReq", endPoint + ":\n" + (gson ?: Gson()).toJson(request))
                 }
             }
         } catch (e: Exception) {
@@ -250,21 +250,21 @@ class AyanApi(
                                     parameters = when (jsonObject.get("Parameters")) {
                                         is JsonObject -> {
                                             if (stringParameters)
-                                                Gson().fromJson(
+                                                (gson ?: Gson()).fromJson(
                                                     (jsonObject.get("Parameters") as JsonObject).get(
                                                         "Params"
                                                     ).asString,
                                                     typeToken.type
                                                 )
                                             else {
-                                                Gson().fromJson(
+                                                (gson ?: Gson()).fromJson(
                                                     jsonObject.getAsJsonObject("Parameters"),
                                                     typeToken.type
                                                 )
                                             }
                                         }
                                         is JsonArray -> {
-                                            Gson().fromJson(
+                                            (gson ?: Gson()).fromJson(
                                                 jsonObject.getAsJsonArray("Parameters"),
                                                 typeToken.type
                                             )
@@ -279,7 +279,7 @@ class AyanApi(
                                         Log.e("Attention", e.message ?: "")
                                 }
                                 val status =
-                                    Gson().fromJson(
+                                    (gson ?: Gson()).fromJson(
                                         jsonObject.getAsJsonObject("Status"),
                                         Status::class.java
                                     )
