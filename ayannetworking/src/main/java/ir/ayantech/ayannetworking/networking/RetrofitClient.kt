@@ -23,6 +23,7 @@ object RetrofitClient {
         userAgent: String,
         defaultBaseUrl: String,
         timeout: Long = 20,
+        setNoProxy: Boolean,
         hostName: String? = null,
         logItems: List<Int>? = null,
         feed: Array<Int>? = null,
@@ -35,13 +36,14 @@ object RetrofitClient {
                     else GsonConverterFactory.create(gson)
                 )
                 .baseUrl(defaultBaseUrl)
-                .client(getOkHttpInstance(userAgent, timeout, hostName, logItems, feed))
+                .client(getOkHttpInstance(userAgent, timeout, setNoProxy, hostName, logItems, feed))
                 .build()
                 .also { retrofit = it }
 
     private fun getOkHttpInstance(
         userAgent: String,
         timeout: Long,
+        setNoProxy: Boolean,
         hostName: String? = null,
         logItems: List<Int>? = null,
         feed: Array<Int>? = null
@@ -51,7 +53,8 @@ object RetrofitClient {
         okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
-        okHttpClientBuilder.proxy(Proxy.NO_PROXY)
+        if (setNoProxy)
+            okHttpClientBuilder.proxy(Proxy.NO_PROXY)
         okHttpClientBuilder.protocols(arrayListOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
         okHttpClientBuilder.addInterceptor {
             val userAgentRequest = it.request()

@@ -33,6 +33,7 @@ class AyanApi(
     var headers: HashMap<String, String> = HashMap(),
     val stringParameters: Boolean = false,
     val forceEndPoint: String? = null,
+    val setNoProxy: Boolean = true,
     val hostName: String? = null,
     val logItems: List<Int>? = null,
     val feed: Array<Int>? = null,
@@ -82,6 +83,7 @@ class AyanApi(
     fun aaa(
         defaultBaseUrl: String,
         timeout: Long,
+        setNoProxy: Boolean,
         hostName: String? = null,
         logItems: List<Int>? = null,
         feed: Array<Int>?,
@@ -91,6 +93,7 @@ class AyanApi(
             userAgent,
             defaultBaseUrl,
             timeout,
+            setNoProxy,
             hostName,
             logItems,
             feed,
@@ -196,7 +199,7 @@ class AyanApi(
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout, hostName, logItems, feed, gson).callApi(
+        aaa(defaultBaseUrl, timeout, setNoProxy, hostName, logItems, feed, gson).callApi(
             finalUrl,
             request,
             headers
@@ -209,7 +212,7 @@ class AyanApi(
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
-                            aaa(defaultBaseUrl, timeout, hostName, logItems, feed, gson).callApi(
+                            aaa(defaultBaseUrl, timeout, setNoProxy, hostName, logItems, feed, gson).callApi(
                                 wrappedPackage.url,
                                 wrappedPackage.request,
                                 headers
@@ -337,7 +340,7 @@ class AyanApi(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout, hostName, logItems, feed, gson).callApi(
+                        aaa(defaultBaseUrl, timeout, setNoProxy, hostName, logItems, feed, gson).callApi(
                             wrappedPackage.url,
                             wrappedPackage.request,
                             headers
