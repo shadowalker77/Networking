@@ -18,6 +18,7 @@ object RetrofitClient {
     @Volatile
     private var okHttpClient: OkHttpClient? = null
 
+    @Synchronized
     fun getInstance(
         userAgent: String,
         defaultBaseUrl: String,

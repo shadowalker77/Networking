@@ -87,7 +87,7 @@ class AyanApi(
         feed: Array<Int>?,
         gson: Gson?
     ) =
-        (apiInterface ?: RetrofitClient.getInstance(
+        apiInterface ?: (RetrofitClient.getInstance(
             userAgent,
             defaultBaseUrl,
             timeout,
@@ -97,7 +97,7 @@ class AyanApi(
             gson
         ).create(ApiInterface::class.java).also {
             apiInterface = it
-        })!!
+        })
 
     inline fun <reified GenericOutput> ayanCall(
         ayanCallStatus: AyanCallStatus<GenericOutput>,
