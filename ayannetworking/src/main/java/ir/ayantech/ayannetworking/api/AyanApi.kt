@@ -10,7 +10,7 @@ import ir.ayantech.ayannetworking.helper.AppSignatureHelper
 import ir.ayantech.ayannetworking.helper.dePent
 import ir.ayantech.ayannetworking.helper.getTypeOf
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
-import ir.ayantech.ayannetworking.networking.RetrofitClient
+import ir.ayantech.ayannetworking.networking.NetworkingClient
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -84,17 +84,27 @@ class AyanApi(
         retrofitInstance.create(ApiInterface::class.java)
     }
 
-    private val retrofitInstance: Retrofit by lazy {
-        RetrofitClient.getInstance(
+    private val okHttpClient: OkHttpClient by lazy {
+        NetworkingClient.getOkHttpInstance(
             userAgent,
-            defaultBaseUrl,
             timeout,
             setNoProxy,
             hostName,
             logItems,
-            feed,
+            feed
+        )
+    }
+
+    private val retrofitInstance: Retrofit by lazy {
+        NetworkingClient.getInstance(
+            okHttpClient,
+            defaultBaseUrl,
             gson
         )
+    }
+
+    fun cancelCalls() {
+        okHttpClient.dispatcher().cancelAll()
     }
 
     inline fun <reified GenericOutput> ayanCall(

@@ -10,17 +10,12 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.net.Proxy
 import java.util.concurrent.TimeUnit
 
-object RetrofitClient {
+object NetworkingClient {
 
     @Synchronized
     fun getInstance(
-        userAgent: String,
+        okHttpClient: OkHttpClient,
         defaultBaseUrl: String,
-        timeout: Long = 20,
-        setNoProxy: Boolean,
-        hostName: String? = null,
-        logItems: List<Int>? = null,
-        feed: Array<Int>? = null,
         gson: Gson?
     ): Retrofit =
         Retrofit.Builder()
@@ -29,10 +24,10 @@ object RetrofitClient {
                 else GsonConverterFactory.create(gson)
             )
             .baseUrl(defaultBaseUrl)
-            .client(getOkHttpInstance(userAgent, timeout, setNoProxy, hostName, logItems, feed))
+            .client(okHttpClient)
             .build()
 
-    private fun getOkHttpInstance(
+    fun getOkHttpInstance(
         userAgent: String,
         timeout: Long,
         setNoProxy: Boolean,
