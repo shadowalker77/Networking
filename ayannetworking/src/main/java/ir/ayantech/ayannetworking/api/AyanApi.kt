@@ -11,10 +11,12 @@ import ir.ayantech.ayannetworking.helper.dePent
 import ir.ayantech.ayannetworking.helper.getTypeOf
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
 import ir.ayantech.ayannetworking.networking.RetrofitClient
+import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import retrofit2.Retrofit
 import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.SocketTimeoutException
@@ -78,18 +80,12 @@ class AyanApi(
         return information.joinToString(separator = " ")
     }
 
-    private var apiInterface: ApiInterface? = null
+    private val apiInterface: ApiInterface by lazy {
+        retrofitInstance.create(ApiInterface::class.java)
+    }
 
-    fun aaa(
-        defaultBaseUrl: String,
-        timeout: Long,
-        setNoProxy: Boolean,
-        hostName: String? = null,
-        logItems: List<Int>? = null,
-        feed: Array<Int>?,
-        gson: Gson?
-    ) =
-        apiInterface ?: (RetrofitClient.getInstance(
+    private val retrofitInstance: Retrofit by lazy {
+        RetrofitClient.getInstance(
             userAgent,
             defaultBaseUrl,
             timeout,
@@ -98,9 +94,8 @@ class AyanApi(
             logItems,
             feed,
             gson
-        ).create(ApiInterface::class.java).also {
-            apiInterface = it
-        })
+        )
+    }
 
     inline fun <reified GenericOutput> ayanCall(
         ayanCallStatus: AyanCallStatus<GenericOutput>,
@@ -192,18 +187,17 @@ class AyanApi(
         try {
             if (logLevel == LogLevel.LOG_ALL) {
                 try {
-                    Log.d("AyanReq", endPoint + ":\n" + (gson ?: Gson()).toJson(request).toPrettyFormat())
+                    Log.d(
+                        "AyanReq",
+                        endPoint + ":\n" + (gson ?: Gson()).toJson(request).toPrettyFormat()
+                    )
                 } catch (e: Exception) {
                     Log.d("AyanReq", endPoint + ":\n" + (gson ?: Gson()).toJson(request))
                 }
             }
         } catch (e: Exception) {
         }
-        aaa(defaultBaseUrl, timeout, setNoProxy, hostName, logItems, feed, gson).callApi(
-            finalUrl,
-            request,
-            headers
-        )
+        apiInterface.callApi(finalUrl, request, headers)
             .enqueue(object : Callback<ResponseBody> {
                 override fun onResponse(
                     call: Call<ResponseBody>,
@@ -212,12 +206,11 @@ class AyanApi(
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
-                            aaa(defaultBaseUrl, timeout, setNoProxy, hostName, logItems, feed, gson).callApi(
+                            apiInterface.callApi(
                                 wrappedPackage.url,
                                 wrappedPackage.request,
                                 headers
-                            )
-                                .enqueue(this)
+                            ).enqueue(this)
                         }
                         if (response.isSuccessful) {
                             if (response.body() == null) {
@@ -340,12 +333,11 @@ class AyanApi(
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
-                        aaa(defaultBaseUrl, timeout, setNoProxy, hostName, logItems, feed, gson).callApi(
+                        apiInterface.callApi(
                             wrappedPackage.url,
                             wrappedPackage.request,
                             headers
-                        )
-                            .enqueue(this)
+                        ).enqueue(this)
                     }
                     val failure = when {
                         t is UnknownHostException -> Failure(

@@ -12,12 +12,6 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    @Volatile
-    private var retrofit: Retrofit? = null
-
-    @Volatile
-    private var okHttpClient: OkHttpClient? = null
-
     @Synchronized
     fun getInstance(
         userAgent: String,
@@ -29,16 +23,14 @@ object RetrofitClient {
         feed: Array<Int>? = null,
         gson: Gson?
     ): Retrofit =
-        retrofit
-            ?: Retrofit.Builder()
-                .addConverterFactory(
-                    if (gson == null) GsonConverterFactory.create()
-                    else GsonConverterFactory.create(gson)
-                )
-                .baseUrl(defaultBaseUrl)
-                .client(getOkHttpInstance(userAgent, timeout, setNoProxy, hostName, logItems, feed))
-                .build()
-                .also { retrofit = it }
+        Retrofit.Builder()
+            .addConverterFactory(
+                if (gson == null) GsonConverterFactory.create()
+                else GsonConverterFactory.create(gson)
+            )
+            .baseUrl(defaultBaseUrl)
+            .client(getOkHttpInstance(userAgent, timeout, setNoProxy, hostName, logItems, feed))
+            .build()
 
     private fun getOkHttpInstance(
         userAgent: String,
@@ -71,15 +63,6 @@ object RetrofitClient {
                 ).build()
             )
         }
-        return okHttpClient ?: okHttpClientBuilder.build().also { okHttpClient = it }
-    }
-
-    fun cancelCalls() {
-        okHttpClient?.dispatcher()?.cancelAll()
-    }
-
-    fun clear() {
-        retrofit = null
-        okHttpClient = null
+        return okHttpClientBuilder.build()
     }
 }
