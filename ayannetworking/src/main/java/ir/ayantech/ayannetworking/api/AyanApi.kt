@@ -158,9 +158,9 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
-//        if (feed?.toList()?.dePent(null) != sign && feed != null) {
-//            throw Exception("No configuration found.")
-//        }
+        if (feed?.toList()?.dePent(null) != sign && feed != null) {
+            throw Exception("No configuration found.")
+        }
 
         var language = Language.PERSIAN
 
