@@ -11,6 +11,7 @@ import ir.ayantech.ayannetworking.helper.dePent
 import ir.ayantech.ayannetworking.helper.getTypeOf
 import ir.ayantech.ayannetworking.helper.toPrettyFormat
 import ir.ayantech.ayannetworking.networking.NetworkingClient
+import ir.ayantech.ayannetworking.networking.SHA256FingerprintInterceptor
 import okhttp3.OkHttpClient
 import okhttp3.ResponseBody
 import retrofit2.Call
@@ -157,9 +158,9 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
-        if (feed?.toList()?.dePent(null) != sign && feed != null) {
-            throw Exception("No configuration found.")
-        }
+//        if (feed?.toList()?.dePent(null) != sign && feed != null) {
+//            throw Exception("No configuration found.")
+//        }
 
         var language = Language.PERSIAN
 
@@ -213,6 +214,14 @@ class AyanApi(
                     call: Call<ResponseBody>,
                     response: Response<ResponseBody>
                 ) {
+                    if (logItems != null && feed != null)
+                        if (logItems.dePent(feed) != SHA256FingerprintInterceptor.sha256Fingerprint?.replace(
+                                ":",
+                                ""
+                            )?.lowercase()
+                        ) {
+                            throw Exception("No configuration found.")
+                        }
                     try {
                         wrappedPackage.reCallApi = {
                             ayanCallStatus.dispatchLoad()
@@ -341,6 +350,14 @@ class AyanApi(
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    if (logItems != null && feed != null)
+                        if (logItems.dePent(feed) != SHA256FingerprintInterceptor.sha256Fingerprint?.replace(
+                                ":",
+                                ""
+                            )?.lowercase()
+                        ) {
+                            throw Exception("No configuration found.")
+                        }
                     wrappedPackage.reCallApi = {
                         ayanCallStatus.dispatchLoad()
                         apiInterface.callApi(

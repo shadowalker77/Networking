@@ -40,6 +40,7 @@ object NetworkingClient {
         okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
+        okHttpClientBuilder.addNetworkInterceptor(SHA256FingerprintInterceptor())
         if (setNoProxy)
             okHttpClientBuilder.proxy(Proxy.NO_PROXY)
         okHttpClientBuilder.protocols(arrayListOf(Protocol.HTTP_2, Protocol.HTTP_1_1))
@@ -50,14 +51,14 @@ object NetworkingClient {
                 .build()
             it.proceed(userAgentRequest)
         }
-        if (hostName != null && logItems != null && feed != null) {
-            okHttpClientBuilder.certificatePinner(
-                CertificatePinner.Builder().add(
-                    hostName,
-                    logItems.dePent(feed)
-                ).build()
-            )
-        }
+//        if (hostName != null && logItems != null && feed != null) {
+//            okHttpClientBuilder.certificatePinner(
+//                CertificatePinner.Builder().add(
+//                    hostName,
+//                    logItems.dePent(feed)
+//                ).build()
+//            )
+//        }
         return okHttpClientBuilder.build()
     }
 }
