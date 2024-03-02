@@ -3,6 +3,7 @@ package ir.ayantech.ayannetworking.networking
 import com.google.gson.Gson
 import ir.ayantech.ayannetworking.helper.dePent
 import okhttp3.CertificatePinner
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import retrofit2.Retrofit
@@ -31,16 +32,18 @@ object NetworkingClient {
         userAgent: String,
         timeout: Long,
         setNoProxy: Boolean,
-        hostName: String? = null,
-        logItems: List<Int>? = null,
-        feed: Array<Int>? = null
+        networkInterceptor: Interceptor?
+//        hostName: String? = null,
+//        logItems: List<Int>? = null,
+//        feed: Array<Int>? = null
     ): OkHttpClient {
         val okHttpClientBuilder = OkHttpClient.Builder()
         okHttpClientBuilder.callTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.connectTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.readTimeout(timeout, TimeUnit.SECONDS)
         okHttpClientBuilder.writeTimeout(timeout, TimeUnit.SECONDS)
-        okHttpClientBuilder.addNetworkInterceptor(SHA256FingerprintInterceptor())
+        if (networkInterceptor != null)
+            okHttpClientBuilder.addNetworkInterceptor(networkInterceptor)
         if (setNoProxy)
             okHttpClientBuilder.proxy(Proxy.NO_PROXY)
         okHttpClientBuilder.protocols(arrayListOf(Protocol.HTTP_2, Protocol.HTTP_1_1))

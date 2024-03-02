@@ -7,16 +7,16 @@ import java.security.MessageDigest
 import java.security.cert.X509Certificate
 
 class SHA256FingerprintInterceptor : Interceptor {
-    companion object {
-        @Volatile var sha256Fingerprint: String? = null
 
-        private fun X509Certificate.getSha256Fingerprint(): String {
-            val md = MessageDigest.getInstance("SHA-256")
-            val publicKey = this.encoded
-            md.update(publicKey)
-            val digest = md.digest()
-            return digest.joinToString(separator = ":") { "%02X".format(it) }
-        }
+    @Volatile
+    var sha256Fingerprint: String? = null
+
+    private fun X509Certificate.getSha256Fingerprint(): String {
+        val md = MessageDigest.getInstance("SHA-256")
+        val publicKey = this.encoded
+        md.update(publicKey)
+        val digest = md.digest()
+        return digest.joinToString(separator = ":") { "%02X".format(it) }
     }
 
     override fun intercept(chain: Interceptor.Chain): Response {

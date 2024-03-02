@@ -85,14 +85,22 @@ class AyanApi(
         retrofitInstance.create(ApiInterface::class.java)
     }
 
+    private val interceptor: SHA256FingerprintInterceptor? by lazy {
+        if (feed != null && logItems != null && hostName != null)
+            SHA256FingerprintInterceptor()
+        else
+            null
+    }
+
     private val okHttpClient: OkHttpClient by lazy {
         NetworkingClient.getOkHttpInstance(
             userAgent,
             timeout,
             setNoProxy,
-            hostName,
-            logItems,
-            feed
+            interceptor
+//            hostName,
+//            logItems,
+//            feed
         )
     }
 
@@ -158,9 +166,9 @@ class AyanApi(
         commonCallStatus: AyanCommonCallStatus? = null,
         baseUrl: String = defaultBaseUrl
     ): WrappedPackage<*, GenericOutput> {
-        if (feed?.toList()?.dePent(null) != sign && feed != null) {
-            throw Exception("No configuration found.")
-        }
+//        if (feed?.toList()?.dePent(null) != sign && feed != null) {
+//            throw Exception("No configuration found.")
+//        }
 
         var language = Language.PERSIAN
 
@@ -215,7 +223,7 @@ class AyanApi(
                     response: Response<ResponseBody>
                 ) {
                     if (logItems != null && feed != null)
-                        if (logItems.dePent(feed) != SHA256FingerprintInterceptor.sha256Fingerprint?.replace(
+                        if (logItems.dePent(feed) != interceptor?.sha256Fingerprint?.replace(
                                 ":",
                                 ""
                             )?.lowercase()
@@ -351,7 +359,7 @@ class AyanApi(
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
                     if (logItems != null && feed != null)
-                        if (logItems.dePent(feed) != SHA256FingerprintInterceptor.sha256Fingerprint?.replace(
+                        if (logItems.dePent(feed) != interceptor?.sha256Fingerprint?.replace(
                                 ":",
                                 ""
                             )?.lowercase()
