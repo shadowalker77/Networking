@@ -358,22 +358,6 @@ class AyanApi(
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                    if (logItems != null && feed != null)
-                        if (logItems.dePent(feed) != interceptor?.sha256Fingerprint?.replace(
-                                ":",
-                                ""
-                            )?.lowercase()
-                        ) {
-                            throw Exception("No configuration found.")
-                        }
-                    wrappedPackage.reCallApi = {
-                        ayanCallStatus.dispatchLoad()
-                        apiInterface.callApi(
-                            wrappedPackage.url,
-                            wrappedPackage.request,
-                            headers
-                        ).enqueue(this)
-                    }
                     val failure = when {
                         t is UnknownHostException -> Failure(
                             FailureRepository.LOCAL,
@@ -434,6 +418,23 @@ class AyanApi(
                             null
                         )
                     }.also { wrappedPackage.failure = it }
+                    if (failure.failureRepository == FailureRepository.REMOTE)
+                        if (logItems != null && feed != null)
+                            if (logItems.dePent(feed) != interceptor?.sha256Fingerprint?.replace(
+                                    ":",
+                                    ""
+                                )?.lowercase()
+                            ) {
+                                throw Exception("No configuration found.")
+                            }
+                    wrappedPackage.reCallApi = {
+                        ayanCallStatus.dispatchLoad()
+                        apiInterface.callApi(
+                            wrappedPackage.url,
+                            wrappedPackage.request,
+                            headers
+                        ).enqueue(this)
+                    }
                     ayanCallStatus.dispatchFail(failure)
                 }
             })
