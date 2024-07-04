@@ -358,6 +358,14 @@ class AyanApi(
                 }
 
                 override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
+                    wrappedPackage.reCallApi = {
+                        ayanCallStatus.dispatchLoad()
+                        apiInterface.callApi(
+                            wrappedPackage.url,
+                            wrappedPackage.request,
+                            headers
+                        ).enqueue(this)
+                    }
                     val failure = when {
                         t is UnknownHostException -> Failure(
                             FailureRepository.LOCAL,
@@ -427,14 +435,6 @@ class AyanApi(
                             ) {
                                 throw Exception("No configuration found.")
                             }
-                    wrappedPackage.reCallApi = {
-                        ayanCallStatus.dispatchLoad()
-                        apiInterface.callApi(
-                            wrappedPackage.url,
-                            wrappedPackage.request,
-                            headers
-                        ).enqueue(this)
-                    }
                     ayanCallStatus.dispatchFail(failure)
                 }
             })
