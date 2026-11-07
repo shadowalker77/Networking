@@ -3,17 +3,17 @@
 # Ayan Networking v2
 
 `v2` is the Ktor-based API client in the `ayannetworking` Android library. It sends
-serializable request models inside the Ayan request envelope and exposes responses,
-errors, and request-state changes as a Kotlin `Flow`.
+serializable request models inside the Ayan request envelope and returns a Kotlin
+`Result<Response>` from each suspending request.
 
 This repository-level document covers only the implementation under
-`ayannetworking/src/main/java/ir/ayantech/ayannetworking/v2`. It does not document
+`ayannetworking/src/main/java/ir/ayantech/networking/v2`. It does not document
 the legacy networking implementation.
 
 ## Requirements
 
 - Android API 21 or newer
-- Kotlin coroutines and `Flow`
+- Kotlin coroutines
 - Kotlin serialization
 - Ktor client with the OkHttp engine
 
@@ -63,9 +63,9 @@ Create one `AyanApi` instance and reuse it. The base URL and endpoint are concat
 as provided, so include any required `/` separator in one of them.
 
 ```kotlin
-import ir.ayantech.ayannetworking.ayanModel.Language
-import ir.ayantech.ayannetworking.ayanModel.LogLevel
-import ir.ayantech.ayannetworking.v2.AyanApi
+import ir.ayantech.networking.ayanModel.Language
+import ir.ayantech.networking.ayanModel.LogLevel
+import ir.ayantech.networking.v2.AyanApi
 import kotlin.time.Duration.Companion.seconds
 
 val ayanApi = AyanApi.Builder(
@@ -100,10 +100,10 @@ if payloads may contain sensitive information.
 
 ## Make a POST request
 
-`post` is currently the public request operation:
+Call `post` from a suspend function or coroutine.
 
 ```kotlin
-val results = ayanApi.post<ProfileRequest, ProfileResponse>(
+val result = ayanApi.post<ProfileRequest, ProfileResponse>(
     body = ProfileRequest(userId = "1234"),
     endPoint = "GetProfile",
 )
@@ -112,57 +112,37 @@ val results = ayanApi.post<ProfileRequest, ProfileResponse>(
 Use the optional `baseUrl` argument to override the configured base URL for one call:
 
 ```kotlin
-val results = ayanApi.post<ProfileRequest, ProfileResponse>(
+val result = ayanApi.post<ProfileRequest, ProfileResponse>(
     body = ProfileRequest(userId = "1234"),
     endPoint = "GetProfile",
     baseUrl = "https://alternate.example.com/",
 )
 ```
 
-## Collect results
+## Handle the result
 
-Each call returns a `Flow<AyanAPIResult<Response, ApiCallStatus, Exception>>`. A normal
-call emits events in this order:
-
-1. `ChangeState(LOADING)`
-2. `Success(data)` or `Error(exception)`
-3. `ChangeState(SUCCESSFUL)` or `ChangeState(FAILED)`
-4. `ChangeState(IDLE)`
-
-Handle events with the provided extension functions:
+Each call returns `Result.success(response)` or `Result.failure(failure)`. Manage
+loading state around the suspend call. Coroutine cancellation propagates to the caller.
 
 ```kotlin
-import ir.ayantech.ayannetworking.v2.api.onChangeState
-import ir.ayantech.ayannetworking.v2.api.onFailure
-import ir.ayantech.ayannetworking.v2.api.onSuccess
-import ir.ayantech.ayannetworking.v2.helpers.Failure
+import ir.ayantech.networking.v2.helpers.Failure
 
-results.collect { result ->
-    result
-        .onSuccess { profile ->
-            showProfile(profile)
-        }
-        .onChangeState { status ->
-            updateLoadingState(status)
-        }
-        .onFailure { exception ->
-            val failure = exception as? Failure
-            showError(failure?.failureMessage ?: exception.message.orEmpty())
-        }
-}
+result
+    .onSuccess { profile -> showProfile(profile) }
+    .onFailure { exception ->
+        val failure = exception as? Failure
+        showError(failure?.failureMessage ?: exception.message.orEmpty())
+    }
 ```
 
-Alternatively, use `fold` when every event should produce one value:
+Use `fold` to turn either outcome into a value.
 
 ```kotlin
 val uiEvent = result.fold(
     onSuccess = { UiEvent.ProfileLoaded(it) },
-    onChangeState = { UiEvent.RequestStateChanged(it) },
-    onError = { UiEvent.RequestFailed(it?.message.orEmpty()) },
+    onFailure = { UiEvent.RequestFailed((it as? Failure)?.failureMessage ?: it.message.orEmpty()) },
 )
 ```
-
-The available request states are `IDLE`, `LOADING`, `FAILED`, and `SUCCESSFUL`.
 
 ## Wire format
 
@@ -211,8 +191,7 @@ service envelope preserve the same message; other HTTP errors use a transport fa
 
 ## Failures
 
-API errors are emitted as `AyanAPIResult.Error`. The exception is normally the v2
-`Failure` type and includes:
+A failed `Result` contains a v2 `Failure` exception with the following fields.
 
 - `failureRepository`: whether the problem is local or remote
 - `failureType`: categorized cause
@@ -254,7 +233,7 @@ result.onFailure { exception ->
 | Package | Purpose |
 | --- | --- |
 | `v2.AyanApi` | Client builder and public POST API |
-| `v2.api` | Request execution, safe-call mapping, and result helpers |
+| `v2.api` | Request execution and safe-call mapping |
 | `v2.model` | Request/response envelopes and API status models |
 | `v2.helpers` | Failure model and user-agent generation |
 | `v2.network` | Ktor `HttpClient` configuration |

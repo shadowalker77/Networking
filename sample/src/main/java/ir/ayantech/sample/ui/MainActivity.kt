@@ -40,12 +40,6 @@ class MainActivity : AppCompatActivity() {
                             }
                         }
 
-                        is MainUIState.ApiStatus -> {
-                            txtStatus.text = buildString {
-                                append("State: ")
-                                append(uiState.state)
-                            }
-                        }
                         is MainUIState.Error ->{
                             Log.d("TAG_AG", "onCreate: ${uiState.failure}")
                             txtStatus.text = buildString {

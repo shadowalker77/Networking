@@ -1,16 +1,16 @@
 package ir.ayantech.networking.ui
 
-import ir.ayantech.ayannetworking.ayanModel.FailureRepository
-import ir.ayantech.ayannetworking.ayanModel.FailureType
-import ir.ayantech.ayannetworking.ayanModel.Language
-import ir.ayantech.ayannetworking.v2.api.AyanAPIResult
-import ir.ayantech.ayannetworking.v2.helpers.Failure
-import ir.ayantech.ayannetworking.v2.model.ApiCallStatus
-import ir.ayantech.networking.domain.model.GetDonationRequestData
-import ir.ayantech.networking.domain.model.ReferrerType
-import ir.ayantech.networking.domain.usecase.GetDonationUseCase
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import ir.ayantech.networking.ayanModel.FailureRepository
+import ir.ayantech.networking.ayanModel.FailureType
+import ir.ayantech.networking.ayanModel.Language
+import ir.ayantech.networking.v2.helpers.Failure
+import ir.ayantech.sample.domain.model.GetDonationRequestData
+import ir.ayantech.sample.domain.model.ReferrerTypeUIModel
+import ir.ayantech.sample.domain.usecase.GetDonationUseCase
+import ir.ayantech.sample.ui.MainUIState
+import ir.ayantech.sample.ui.MainViewModel
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -20,15 +20,15 @@ class MainViewModelTest {
 
     @Test
     fun `initial state is idle`() {
-        val viewModel = MainViewModel(FakeGetDonationUseCase(emptyList()))
+        val viewModel = MainViewModel(FakeGetDonationUseCase(Result.success(emptyList())))
 
         assertSame(MainUIState.IDLE, viewModel.uiState.value)
     }
 
     @Test
     fun `getDonation sends fixed request and exposes successful data`() = runTest {
-        val data = listOf(ReferrerType(name = "friend", showName = "Friend"))
-        val useCase = FakeGetDonationUseCase(listOf(AyanAPIResult.success(data)))
+        val data = listOf(ReferrerTypeUIModel(name = "friend", showName = "Friend"))
+        val useCase = FakeGetDonationUseCase(Result.success(data))
         val viewModel = MainViewModel(useCase)
 
         viewModel.getDonation()
@@ -38,21 +38,26 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `getDonation exposes api status`() = runTest {
-        val useCase = FakeGetDonationUseCase(
-            listOf(AyanAPIResult.changeState(ApiCallStatus.LOADING))
-        )
-        val viewModel = MainViewModel(useCase)
+    fun `getDonation exposes loading while the request is suspended`() = runTest {
+        val started = CompletableDeferred<Unit>()
+        val completion = CompletableDeferred<Result<List<ReferrerTypeUIModel>>>()
+        val viewModel = MainViewModel(object : GetDonationUseCase {
+            override suspend fun invoke(requestData: GetDonationRequestData): Result<List<ReferrerTypeUIModel>> {
+                started.complete(Unit)
+                return completion.await()
+            }
+        })
 
         viewModel.getDonation()
 
-        assertEquals(MainUIState.ApiStatus(ApiCallStatus.LOADING), viewModel.uiState.value)
+        completion.complete(Result.success(emptyList()))
+        assertEquals(MainUIState.Success(emptyList()), viewModel.uiState.value)
     }
 
     @Test
     fun `getDonation exposes networking failure`() = runTest {
         val failure = testFailure()
-        val useCase = FakeGetDonationUseCase(listOf(AyanAPIResult.error(failure)))
+        val useCase = FakeGetDonationUseCase(Result.failure(failure))
         val viewModel = MainViewModel(useCase)
 
         viewModel.getDonation()
@@ -63,7 +68,7 @@ class MainViewModelTest {
     @Test
     fun `getDonation ignores errors that are not networking failures`() = runTest {
         val useCase = FakeGetDonationUseCase(
-            listOf(AyanAPIResult.error(IllegalStateException("unexpected")))
+            Result.failure(IllegalStateException("unexpected"))
         )
         val viewModel = MainViewModel(useCase)
 
@@ -73,15 +78,15 @@ class MainViewModelTest {
     }
 
     private class FakeGetDonationUseCase(
-        private val results: List<AyanAPIResult<List<ReferrerType>, ApiCallStatus, Exception>>
+        private val result: Result<List<ReferrerTypeUIModel>>
     ) : GetDonationUseCase {
         var receivedRequest: GetDonationRequestData? = null
 
         override suspend fun invoke(
             requestData: GetDonationRequestData
-        ): Flow<AyanAPIResult<List<ReferrerType>, ApiCallStatus, Exception>> {
+        ): Result<List<ReferrerTypeUIModel>> {
             receivedRequest = requestData
-            return flowOf(*results.toTypedArray())
+            return result
         }
     }
 

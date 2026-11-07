@@ -1,16 +1,12 @@
 package ir.ayantech.sample.data.source
 
 import ir.ayantech.networking.v2.AyanApi
-import ir.ayantech.networking.v2.api.AyanAPIResult
-import ir.ayantech.networking.v2.model.ApiCallStatus
 import ir.ayantech.sample.data.APIs
 import ir.ayantech.sample.domain.model.DonationServiceDTO
 import ir.ayantech.sample.domain.model.GetDonationRequestData
-import kotlinx.coroutines.flow.Flow
 
 class DonationRemoteDataSourceImpl(private val ayanApi: AyanApi) : DonationRemoteDataSource {
-    override suspend fun fetchDonation(data: GetDonationRequestData):
-            Flow<AyanAPIResult<DonationServiceDTO.Output, ApiCallStatus, Exception>> {
+    override suspend fun fetchDonation(data: GetDonationRequestData): Result<DonationServiceDTO.Output> {
         return ayanApi.post<GetDonationRequestData, DonationServiceDTO.Output>(
             body = data,
             endPoint = APIs.DONATION_SERVICE,

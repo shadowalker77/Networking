@@ -7,7 +7,6 @@ import ir.ayantech.networking.ayanModel.FailureRepository
 import ir.ayantech.networking.ayanModel.FailureType
 import ir.ayantech.networking.ayanModel.Language
 import ir.ayantech.networking.v2.helpers.Failure
-import ir.ayantech.networking.v2.model.ApiCallStatus
 import ir.ayantech.networking.v2.model.AyanResponse
 import ir.ayantech.networking.v2.model.Status
 import kotlinx.coroutines.CancellationException
@@ -45,7 +44,7 @@ internal fun remoteFailure(
 suspend inline fun <reified T> safeApiCall(
     language: Language = Language.PERSIAN,
     request: suspend () -> HttpResponse
-): AyanAPIResult<T, ApiCallStatus, Exception> {
+): Result<T> {
     return try {
         val response = request.invoke()
         currentCoroutineContext().ensureActive()
@@ -54,7 +53,7 @@ suspend inline fun <reified T> safeApiCall(
                 response.body<AyanResponse<JsonElement>>().status
             }.getOrNull()
             currentCoroutineContext().ensureActive()
-            return AyanAPIResult.error(
+            return Result.failure(
                 remoteFailure(
                     FailureType.NOT_200,
                     status?.code ?: response.status.value.toString(),
@@ -71,26 +70,25 @@ suspend inline fun <reified T> safeApiCall(
         if (status.code != "G00000") {
             val failureType =
                 if (status.code == "G00002") FailureType.LOGIN_REQUIRED else FailureType.UNKNOWN
-            return AyanAPIResult.error(remoteFailure(failureType, failureCode, language, status))
+            return Result.failure(remoteFailure(failureType, failureCode, language, status))
         }
 
         val parameters = data.parameters
         if (parameters == null || parameters == JsonNull) {
-            return AyanAPIResult.error(
+            return Result.failure(
                 remoteFailure(FailureType.UNKNOWN, failureCode, language, status)
             )
         }
 
         val value = responseJson.decodeFromJsonElement<T>(parameters)
         currentCoroutineContext().ensureActive()
-        return AyanAPIResult.success(value)
+        Result.success(value)
 
     } catch (cancellation: CancellationException) {
         throw cancellation
     } catch (throwable: Throwable) {
         currentCoroutineContext().ensureActive()
-        val failure = throwable.toFailure(language = language)
-        AyanAPIResult.error(failure)
+        Result.failure(throwable.toFailure(language = language))
     }
 }
 

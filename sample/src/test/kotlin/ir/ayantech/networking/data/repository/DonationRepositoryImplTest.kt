@@ -1,12 +1,9 @@
 package ir.ayantech.networking.data.repository
 
-import ir.ayantech.ayannetworking.v2.api.AyanAPIResult
-import ir.ayantech.ayannetworking.v2.model.ApiCallStatus
-import ir.ayantech.networking.data.source.DonationRemoteDataSource
-import ir.ayantech.networking.domain.model.DonationServiceDTO
-import ir.ayantech.networking.domain.model.GetDonationRequestData
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
+import ir.ayantech.sample.data.repository.DonationRepositoryImpl
+import ir.ayantech.sample.data.source.DonationRemoteDataSource
+import ir.ayantech.sample.domain.model.DonationServiceDTO
+import ir.ayantech.sample.domain.model.GetDonationRequestData
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
@@ -15,27 +12,26 @@ import org.junit.Test
 class DonationRepositoryImplTest {
 
     @Test
-    fun `fetchDonation delegates request and returns remote flow`() = runTest {
+    fun `fetchDonation delegates request and returns remote result`() = runTest {
         val request = GetDonationRequestData(id = "99")
         val output = DonationServiceDTO.Output(emptyList())
-        val remoteFlow = flowOf(AyanAPIResult.success(output))
-        val remoteSource = FakeDonationRemoteDataSource(remoteFlow)
+        val remoteSource = FakeDonationRemoteDataSource(Result.success(output))
         val repository = DonationRepositoryImpl(remoteSource)
 
         val result = repository.fetchDonation(request)
 
         assertEquals(request, remoteSource.receivedRequest)
-        assertSame(remoteFlow, result)
+        assertSame(output, result.getOrThrow())
     }
 
     private class FakeDonationRemoteDataSource(
-        private val result: Flow<AyanAPIResult<DonationServiceDTO.Output, ApiCallStatus, Exception>>
+        private val result: Result<DonationServiceDTO.Output>
     ) : DonationRemoteDataSource {
         var receivedRequest: GetDonationRequestData? = null
 
         override suspend fun fetchDonation(
             data: GetDonationRequestData
-        ): Flow<AyanAPIResult<DonationServiceDTO.Output, ApiCallStatus, Exception>> {
+        ): Result<DonationServiceDTO.Output> {
             receivedRequest = data
             return result
         }

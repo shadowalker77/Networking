@@ -1,17 +1,13 @@
 package ir.ayantech.ayannetworking.v2.api
 
 import com.sun.net.httpserver.HttpServer
-import io.ktor.client.HttpClient
-import io.ktor.client.request.get
 import ir.ayantech.networking.ayanModel.FailureType
 import ir.ayantech.networking.ayanModel.Language
 import ir.ayantech.networking.ayanModel.LogLevel
-import ir.ayantech.networking.v2.api.AyanAPIResult
+import ir.ayantech.networking.v2.api.APICall
 import ir.ayantech.networking.v2.api.AyanApiRequirements
 import ir.ayantech.networking.v2.api.safeApiCall
 import ir.ayantech.networking.v2.helpers.Failure
-import ir.ayantech.networking.v2.model.ApiCallStatus
-import ir.ayantech.networking.v2.network.KtorClient
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import kotlin.time.Duration.Companion.seconds
@@ -20,13 +16,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import org.junit.Assert.assertSame
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
+import kotlin.coroutines.cancellation.CancellationException
 
 class SafeApiCallStatusTest {
     private lateinit var server: HttpServer
-    private lateinit var client: HttpClient
+    private lateinit var apiCall: APICall
     private var responseBody = ""
     private var responseStatus = 200
 
@@ -40,7 +38,7 @@ class SafeApiCallStatusTest {
             exchange.responseBody.use { it.write(bytes) }
         }
         server.start()
-        client = KtorClient.getClient(
+        apiCall = APICall(
             AyanApiRequirements(
                 userAgent = "networking-test",
                 baseUrl = "http://127.0.0.1:${server.address.port}/",
@@ -58,7 +56,7 @@ class SafeApiCallStatusTest {
 
     @After
     fun tearDown() {
-        client.close()
+        apiCall.httpClient.close()
         server.stop(0)
     }
 
@@ -73,7 +71,7 @@ class SafeApiCallStatusTest {
         val result = call()
 
         // Assert
-        val failure = (result as AyanAPIResult.Error<Payload>).ayanFailure as Failure
+        val failure = result.exceptionOrNull() as Failure
         assertEquals("GR0053", failure.failureCode)
         assertEquals(description, failure.failureMessage)
         assertEquals(description, failure.failureStatus?.description)
@@ -90,7 +88,7 @@ class SafeApiCallStatusTest {
         val result = call()
 
         // Assert
-        val failure = (result as AyanAPIResult.Error<Payload>).ayanFailure as Failure
+        val failure = result.exceptionOrNull() as Failure
         assertEquals(FailureType.LOGIN_REQUIRED, failure.failureType)
         assertEquals("Sign in again", failure.failureMessage)
     }
@@ -105,8 +103,7 @@ class SafeApiCallStatusTest {
         val result = call()
 
         // Assert
-        assertTrue(result is AyanAPIResult.Success)
-        assertEquals("ready", (result as AyanAPIResult.Success<Payload>).value.value)
+        assertEquals("ready", result.getOrThrow().value)
     }
 
     @Test
@@ -120,7 +117,7 @@ class SafeApiCallStatusTest {
         val result = call()
 
         // Assert
-        val failure = (result as AyanAPIResult.Error<Payload>).ayanFailure as Failure
+        val failure = result.exceptionOrNull() as Failure
         assertEquals(FailureType.NOT_200, failure.failureType)
         assertEquals("GR0053", failure.failureCode)
         assertEquals("Invalid one-time code", failure.failureMessage)
@@ -136,16 +133,25 @@ class SafeApiCallStatusTest {
         val result = call()
 
         // Assert
-        val failure = (result as AyanAPIResult.Error<Payload>).ayanFailure as Failure
+        val failure = result.exceptionOrNull() as Failure
         assertEquals(FailureType.NOT_200, failure.failureType)
         assertEquals("500", failure.failureCode)
         assertEquals(null, failure.failureStatus)
     }
 
-    private suspend fun call(): AyanAPIResult<Payload, ApiCallStatus, Exception> =
-        safeApiCall<Payload> {
-            client.get("http://127.0.0.1:${server.address.port}/")
+    @Test
+    fun propagatesCancellation() = runBlocking {
+        val expected = CancellationException("request canceled")
+        try {
+            safeApiCall<Payload> { throw expected }
+            fail("Expected cancellation to propagate")
+        } catch (actual: CancellationException) {
+            assertSame(expected, actual)
         }
+    }
+
+    private suspend fun call(): Result<Payload> =
+        apiCall.post(body = Payload("request"), apiPath = "")
 
     @Serializable
     private data class Payload(@SerialName("Value") val value: String)
