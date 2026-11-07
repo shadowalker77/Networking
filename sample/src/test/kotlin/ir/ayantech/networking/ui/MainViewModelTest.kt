@@ -38,7 +38,7 @@ class MainViewModelTest {
     }
 
     @Test
-    fun `getDonation exposes loading while the request is suspended`() = runTest {
+    fun `getDonation stays idle while the first request is suspended`() = runTest {
         val started = CompletableDeferred<Unit>()
         val completion = CompletableDeferred<Result<List<ReferrerTypeUIModel>>>()
         val viewModel = MainViewModel(object : GetDonationUseCase {
@@ -48,9 +48,12 @@ class MainViewModelTest {
             }
         })
 
-        viewModel.getDonation()
+        val job = launch { viewModel.getDonation() }
+        started.await()
+        assertSame(MainUIState.IDLE, viewModel.uiState.value)
 
         completion.complete(Result.success(emptyList()))
+        job.join()
         assertEquals(MainUIState.Success(emptyList()), viewModel.uiState.value)
     }
 
